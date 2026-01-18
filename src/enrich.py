@@ -7,6 +7,15 @@ limiting, error handling, and provenance tracking.
 
 Functions
 ---------
+enrich_with_external_data()
+    Join base dataset with external data via left join.
+
+add_derived_columns()
+    Create derived analysis metrics from existing columns.
+
+calculate_enrichment_coverage()
+    Calculate coverage statistics for enrichment columns.
+
 scrape_huggingface_models()
     Scrape model information from HuggingFace Open LLM Leaderboard.
 
@@ -24,6 +33,7 @@ Notes
 from datetime import datetime
 from typing import Optional
 import time
+import re
 
 import polars as pl
 
@@ -33,6 +43,315 @@ try:
     REQUESTS_AVAILABLE = True
 except ImportError:
     REQUESTS_AVAILABLE = False
+
+
+def enrich_with_external_data(
+    base_df: pl.DataFrame,
+    external_df: pl.DataFrame,
+    join_key: str = "Model"
+) -> pl.DataFrame:
+    """
+    Enrich base dataset with external data via left join.
+
+    Performs a left join to preserve all original models, adding external
+    metadata where available. Tracks enrichment metadata including timestamp,
+    source, and coverage rate.
+
+    Parameters
+    ----------
+    base_df : pl.DataFrame
+        Base dataset with models to be enriched. Must contain join_key column.
+    external_df : pl.DataFrame
+        External data with enrichment metadata. Must contain join_key column.
+    join_key : str, default="Model"
+        Column name to join on (typically "Model" for this dataset).
+
+    Returns
+    -------
+    pl.DataFrame
+        Enriched DataFrame with:
+        - All original columns from base_df
+        - External columns from external_df (nulls if no match)
+        - enriched_at: ISO timestamp of enrichment operation
+        - enrichment_source: Source of external data
+        - coverage_rate: Percentage of rows with enrichment data
+
+    Raises
+    ------
+    ValueError
+        If join_key doesn't exist in both DataFrames.
+
+    Examples
+    --------
+    >>> base = pl.DataFrame({"Model": ["GPT-4", "Claude"], "price": [10, 20]})
+    >>> external = pl.DataFrame({"Model": ["GPT-4"], "release_date": ["2023-03"]})
+    >>> enriched = enrich_with_external_data(base, external)
+    >>> print(enriched.shape)
+    (2, 5)  # All rows preserved, external data added where matched
+
+    Notes
+    -----
+    - Left join ensures no original models are lost
+    - Null values in external columns indicate no match found
+    - Coverage rate calculated as (non-null enrichment rows / total rows) * 100
+    - Case-sensitive join by default - consider standardizing model names first
+
+    References
+    ----------
+    Pattern: Left join for data enrichment preserving all records.
+    See RESEARCH.md "Pitfall 5: External Data Enrichment Provenance Loss"
+    """
+    # Validate join_key exists in both DataFrames
+    if join_key not in base_df.columns:
+        raise ValueError(f"join_key '{join_key}' not found in base_df columns: {base_df.columns}")
+    if join_key not in external_df.columns:
+        raise ValueError(f"join_key '{join_key}' not found in external_df columns: {external_df.columns}")
+
+    # Perform left join (preserve all base records)
+    enriched_df = base_df.join(external_df, on=join_key, how="left", coalesce=False)
+
+    # Calculate coverage rate
+    total_rows = enriched_df.height
+    # Count rows that have at least one non-null value from external data
+    external_columns = [col for col in external_df.columns if col != join_key]
+    if external_columns:
+        # Count rows where ANY external column has data
+        has_enrichment = pl.any_horizontal(pl.col(external_columns).is_not_null())
+        enriched_count = enriched_df.select(has_enrichment.sum()).item()
+        coverage_rate = (enriched_count / total_rows * 100) if total_rows > 0 else 0.0
+    else:
+        coverage_rate = 0.0
+
+    # Add enrichment metadata
+    enriched_df = enriched_df.with_columns([
+        pl.lit(datetime.now().isoformat()).alias("enriched_at"),
+        pl.lit("external_scraping").alias("enrichment_source"),
+        pl.lit(coverage_rate).alias("coverage_rate")
+    ])
+
+    return enriched_df
+
+
+def add_derived_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """
+    Add derived analysis columns to dataset.
+
+    Creates computed metrics for statistical analysis and visualization,
+    handling edge cases like null values and division by zero.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        Input DataFrame with base model metrics.
+
+    Returns
+    -------
+    pl.DataFrame
+        DataFrame with additional derived columns:
+        - price_per_intelligence_point: Price per IQ score (USD per point)
+        - speed_intelligence_ratio: Speed (tokens/s) per IQ point
+        - model_tier: Extracted tier from model name (xhigh, high, medium, low, mini)
+        - log_context_window: Log10 of context window for better visualization
+        - price_per_1k_tokens: Price scaled to per-1k-token basis
+
+    Examples
+    --------
+    >>> df = pl.DataFrame({
+    ...     "price_usd": [10.0, 20.0],
+    ...     "intelligence_index": [80, 100],
+    ...     "Speed(median token/s)": [50, 100],
+    ...     "Model": ["GPT-4-mini", "Claude-Opus"],
+    ...     "context_window": [128000, 200000]
+    ... })
+    >>> enriched = add_derived_columns(df)
+    >>> print(enriched.columns)
+    [..., 'price_per_intelligence_point', 'speed_intelligence_ratio', ...]
+
+    Notes
+    -----
+    - Division by zero results in null values
+    - Null intelligence_index results in null for ratios involving it
+    - Model tier extraction uses regex patterns (case-insensitive)
+    - Log transformation helps visualize skewed distributions
+    - All derived columns preserve null semantics from source columns
+
+    Tier Classification
+    -------------------
+    Model tiers extracted from name patterns:
+    - xhigh: "x-high", "xhigh", "extra-high", "ultra"
+    - high: "high", "pro", "max", "plus"
+    - medium: "medium", "standard", "base"
+    - low: "low", "lite", "basic"
+    - mini: "mini", "small", "tiny", "nano"
+    - unknown: No tier pattern detected
+    """
+    derived_df = df.clone()
+
+    # Price per intelligence point (handle division by zero and nulls)
+    if "price_usd" in derived_df.columns and "intelligence_index" in derived_df.columns:
+        derived_df = derived_df.with_columns([
+            pl.when(pl.col("intelligence_index") > 0)
+            .then(pl.col("price_usd") / pl.col("intelligence_index"))
+            .otherwise(None)
+            .alias("price_per_intelligence_point")
+        ])
+    else:
+        # Add null column if source columns missing
+        derived_df = derived_df.with_columns([
+            pl.lit(None, dtype=pl.Float64).alias("price_per_intelligence_point")
+        ])
+
+    # Speed to intelligence ratio
+    if "Speed(median token/s)" in derived_df.columns and "intelligence_index" in derived_df.columns:
+        # Convert Speed column to Float64 for division
+        derived_df = derived_df.with_columns([
+            pl.when(pl.col("intelligence_index") > 0)
+            .then(pl.col("Speed(median token/s)") / pl.col("intelligence_index"))
+            .otherwise(None)
+            .alias("speed_intelligence_ratio")
+        ])
+    else:
+        derived_df = derived_df.with_columns([
+            pl.lit(None, dtype=pl.Float64).alias("speed_intelligence_ratio")
+        ])
+
+    # Extract model tier from model name using regex
+    if "Model" in derived_df.columns:
+        # Define tier patterns (order matters - more specific first)
+        tier_patterns = {
+            "xhigh": r"(x-high|xhigh|extra-high|ultra)",
+            "high": r"(high|pro|max|plus)",
+            "medium": r"(medium|standard|base)",
+            "low": r"(low|lite|basic)",
+            "mini": r"(mini|small|tiny|nano)"
+        }
+
+        # Create tier column with case-insensitive matching
+        model_lower = pl.col("Model").str.to_lowercase()
+
+        # Apply tier patterns in order
+        derived_df = derived_df.with_columns([
+            pl.when(model_lower.str.contains(tier_patterns["xhigh"], literal=False))
+            .then(pl.lit("xhigh"))
+            .when(model_lower.str.contains(tier_patterns["high"], literal=False))
+            .then(pl.lit("high"))
+            .when(model_lower.str.contains(tier_patterns["medium"], literal=False))
+            .then(pl.lit("medium"))
+            .when(model_lower.str.contains(tier_patterns["low"], literal=False))
+            .then(pl.lit("low"))
+            .when(model_lower.str.contains(tier_patterns["mini"], literal=False))
+            .then(pl.lit("mini"))
+            .otherwise(pl.lit("unknown"))
+            .alias("model_tier")
+        ])
+    else:
+        derived_df = derived_df.with_columns([
+            pl.lit("unknown", dtype=pl.Utf8).alias("model_tier")
+        ])
+
+    # Log10 of context window for better visualization
+    if "context_window" in derived_df.columns:
+        derived_df = derived_df.with_columns([
+            pl.when(pl.col("context_window") > 0)
+            .then(pl.col("context_window").log10())
+            .otherwise(None)
+            .alias("log_context_window")
+        ])
+    else:
+        derived_df = derived_df.with_columns([
+            pl.lit(None, dtype=pl.Float64).alias("log_context_window")
+        ])
+
+    # Price per 1k tokens (more intuitive scale)
+    if "price_usd" in derived_df.columns:
+        derived_df = derived_df.with_columns([
+            (pl.col("price_usd") / 1000.0).alias("price_per_1k_tokens")
+        ])
+    else:
+        derived_df = derived_df.with_columns([
+            pl.lit(None, dtype=pl.Float64).alias("price_per_1k_tokens")
+        ])
+
+    return derived_df
+
+
+def calculate_enrichment_coverage(
+    df: pl.DataFrame,
+    enrichment_columns: list[str]
+) -> dict[str, dict[str, any]]:
+    """
+    Calculate coverage statistics for enrichment columns.
+
+    Analyzes how many rows have data vs nulls for each enrichment column,
+    providing metrics to assess data quality and completeness.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        DataFrame to analyze (typically after enrichment).
+    enrichment_columns : list[str]
+        List of column names to calculate coverage for.
+
+    Returns
+    -------
+    dict[str, dict[str, any]]
+        Dictionary mapping column names to coverage statistics:
+        - non_null_count: Number of rows with non-null values
+        - null_count: Number of rows with null values
+        - coverage_percentage: (non_null_count / total_rows) * 100
+
+    Examples
+    --------
+    >>> df = pl.DataFrame({
+    ...     "release_date": ["2023-01", None, "2023-03"],
+    ...     "benchmark_score": [85.5, None, 92.1]
+    ... })
+    >>> coverage = calculate_enrichment_coverage(df, ["release_date", "benchmark_score"])
+    >>> print(coverage["release_date"]["coverage_percentage"])
+    66.67
+
+    Notes
+    -----
+    - Total rows used for percentage calculation is df.height
+    - Coverage percentage rounded to 2 decimal places
+    - Prints summary to console for immediate feedback
+    - Useful for documenting enrichment quality in reports
+
+    Output Format
+    -------------
+    Prints table showing:
+    | Column            | Non-Null | Null | Coverage % |
+    |-------------------|----------|------|------------|
+    | release_date      | 2        | 1    | 66.67%     |
+    """
+    coverage_stats = {}
+    total_rows = df.height
+
+    print("\n" + "=" * 60)
+    print("Enrichment Coverage Analysis")
+    print("=" * 60)
+    print(f"{'Column':<30} {'Non-Null':>10} {'Null':>10} {'Coverage %':>12}")
+    print("-" * 60)
+
+    for col in enrichment_columns:
+        if col in df.columns:
+            non_null_count = df.select(pl.col(col).drop_nulls()).height
+            null_count = total_rows - non_null_count
+            coverage_pct = (non_null_count / total_rows * 100) if total_rows > 0 else 0.0
+
+            coverage_stats[col] = {
+                "non_null_count": non_null_count,
+                "null_count": null_count,
+                "coverage_percentage": round(coverage_pct, 2)
+            }
+
+            print(f"{col:<30} {non_null_count:>10} {null_count:>10} {coverage_pct:>11.2f}%")
+        else:
+            print(f"{col:<30} {'NOT FOUND':>32}")
+
+    print("=" * 60)
+
+    return coverage_stats
 
 
 def scrape_huggingface_models() -> pl.DataFrame:
