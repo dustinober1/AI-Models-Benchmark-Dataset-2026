@@ -72,12 +72,21 @@ def analyze_distribution(series: pl.Series) -> dict:
     - Normality test p-value < 0.05: Not normally distributed
     """
     # Drop null values for statistical calculations
-    data = series.drop_nulls().to_numpy()
+    series_clean = series.drop_nulls()
+
+    if len(series_clean) == 0:
+        return {
+            "count": 0,
+            "error": "No valid data points"
+        }
+
+    # Convert to numpy array with explicit float64 type
+    data = series_clean.cast(pl.Float64).to_numpy()
 
     if len(data) == 0:
         return {
             "count": 0,
-            "error": "No valid data points"
+            "error": "No valid data points after casting"
         }
 
     # Descriptive statistics
@@ -237,8 +246,8 @@ def plot_distribution(
     if column not in df.columns:
         raise ValueError(f"Column '{column}' not found in DataFrame")
 
-    # Extract data and drop nulls
-    data = df[column].drop_nulls().to_numpy()
+    # Extract data and drop nulls, then cast to float64 for safety
+    data = df[column].drop_nulls().cast(pl.Float64).to_numpy()
 
     if len(data) == 0:
         raise ValueError(f"Column '{column}' has no valid data to plot")
