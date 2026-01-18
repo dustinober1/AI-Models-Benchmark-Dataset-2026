@@ -1,53 +1,59 @@
 ---
 phase: 01-data-pipeline
-plan: 05
+plan: 05b
 type: execute
-wave: 4
-depends_on: [01-03]
+wave: 5
+depends_on: [01-05a]
 files_modified:
-  - data/external/huggingface_models.parquet
   - data/processed/ai_models_enriched.parquet
   - src/enrich.py
   - scripts/06_enrich_external.py
+  - reports/enrichment_coverage.md
 autonomous: true
 user_setup: []
 
 must_haves:
   truths:
-    - "External data sources are scraped for model release dates and announcements"
-    - "Provenance is tracked with source_url, retrieved_at, and retrieved_by columns"
-    - "Raw scraped data is saved to data/external/ for reproducibility"
-    - "Dataset is enriched with external data via left join (nulls if no match)"
+    - "Data enrichment utilities implement left join to preserve all models"
+    - "Derived columns are created for analysis (price per IQ, model tier, etc.)"
+    - "Coverage statistics are calculated for all enrichment columns"
+    - "Dataset is enriched and saved as final analysis-ready file"
+    - "Coverage report documents match rates and recommendations"
   artifacts:
-    - path: "data/external/huggingface_models.parquet"
-      provides: "Scraped external data with provenance"
-      format: "parquet"
     - path: "data/processed/ai_models_enriched.parquet"
       provides: "Final enriched dataset for analysis"
       format: "parquet"
     - path: "src/enrich.py"
-      provides: "External data enrichment utilities"
-      exports: ["scrape_huggingface_models", "enrich_with_external_data"]
+      provides: "Data enrichment utilities"
+      exports: ["enrich_with_external_data", "add_derived_columns", "calculate_enrichment_coverage"]
+      min_lines: 80
+    - path: "reports/enrichment_coverage.md"
+      provides: "Enrichment coverage analysis report"
+      format: "markdown"
   key_links:
     - from: "scripts/06_enrich_external.py"
       to: "data/interim/02_cleaned.parquet"
       via: "load cleaned dataset"
       pattern: "read_parquet.*02_cleaned"
     - from: "scripts/06_enrich_external.py"
+      to: "data/external/"
+      via: "load scraped external data"
+      pattern: "read_parquet.*data/external"
+    - from: "scripts/06_enrich_external.py"
       to: "src/enrich.py"
       via: "enrichment function calls"
-      pattern: "from src\\.enrich import"
-    - from: "src/enrich.py"
-      to: "https://huggingface.co/open-llm-leaderboard"
-      via: "web scraping with requests"
-      pattern: "requests\\.get.*huggingface"
+      pattern: "from src\\.enrich import.*(enrich|derive|coverage)"
+    - from: "scripts/06_enrich_external.py"
+      to: "data/processed/"
+      via: "save final enriched dataset"
+      pattern: "sink_parquet.*ai_models_enriched"
 ---
 
 <objective>
-Enrich the dataset with external data sources including model release dates, provider announcements, and market events.
+Enrich the dataset with external data and derived analysis columns.
 
-Purpose: Add temporal and contextual metadata to enable time-based analysis and market trend insights, tracking provenance for reproducibility and updateability.
-Output: Enriched dataset with external metadata, saved to data/processed/ as the final analysis-ready dataset.
+Purpose: Combine cleaned base data with scraped external metadata via left join (preserving all models), create derived analysis metrics, document enrichment coverage, and produce the final analysis-ready dataset for Phase 2.
+Output: Enriched dataset with external metadata and derived columns, saved to data/processed/ with coverage report.
 </objective>
 
 <execution_context>
@@ -61,65 +67,10 @@ Output: Enriched dataset with external metadata, saved to data/processed/ as the
 @.planning/STATE.md
 @.planning/phases/01-data-pipeline-&-quality-assessment**---load,-clean,-validate,-and-enrich-the-benchmark-dataset/01-CONTEXT.md
 @.planning/phases/01-data-pipeline-&-quality-assessment**---load,-clean,-validate,-and-enrich-the-benchmark-dataset/01-RESEARCH.md
+@.planning/phases/01-data-pipeline-&-quality-assessment**---load,-clean,-validate,-and-enrich-the-benchmark-dataset/01-05a-PLAN.md
 </context>
 
 <tasks>
-
-<task type="auto">
-  <name>Implement web scraping utilities</name>
-  <files>src/enrich.py</files>
-  <action>
-    Create src/enrich.py with external data enrichment utilities:
-
-    Import requests, BeautifulSoup, datetime, time, polars as pl
-
-    Define `scrape_huggingface_models() -> pl.DataFrame` function:
-    - Set base_url = "https://huggingface.co/open-llm-leaderboard"
-    - Initialize empty list models_data = []
-    - Try-except block for error handling:
-      * Send GET request with User-Agent header to avoid blocking
-      * Use response.raise_for_status() to check for HTTP errors
-      * Parse HTML with BeautifulSoup
-      * Extract model information (selectors depend on actual page structure):
-        - Model name from model name element
-        - Release date from date element if available
-        - Benchmark scores if available
-        - Provider/organization if available
-      * For each model found, append dict with:
-        * model: str
-        * release_date: str (or None)
-        * benchmark_score: float (or None)
-        * provider: str (or None)
-        * source_url: str (base_url or specific model page)
-        * retrieved_at: datetime.now().isoformat()
-        * retrieved_by: "scrape_huggingface_models"
-      * Add time.sleep(1) for rate limiting between requests
-      * Handle pagination if present (loop through pages)
-    - On exception: print error message, return empty pl.DataFrame()
-    - Convert models_data list to pl.DataFrame
-    - Return DataFrame
-
-    Reference RESEARCH.md "Web Scraping for Model Release Dates" example
-    Add comprehensive docstring explaining data source and limitations
-    Add comments about rate limiting and respectful scraping practices
-    Note that actual HTML selectors will need inspection and adjustment
-
-    Define `scrape_provider_announcements() -> pl.DataFrame` function:
-    - Similar structure to scrape_huggingface_models
-    - Target provider blogs/news pages (OpenAI, Anthropic, Google, etc.)
-    - Extract model announcements with dates
-    - Add provenance columns (source_url, retrieved_at, retrieved_by)
-    - Return DataFrame
-
-    Note: According to CONTEXT.md, use automated collection where possible but accept best-effort coverage
-  </action>
-  <verify>
-    `python -c "from src.enrich import scrape_huggingface_models; print('Function imported')"` confirms function exists
-  </verify>
-  <done>
-    Web scraping functions exist that can fetch external data from HuggingFace and provider sources with proper rate limiting, error handling, and provenance tracking
-  </done>
-</task>
 
 <task type="auto">
   <name>Implement data enrichment utilities</name>
@@ -163,51 +114,6 @@ Output: Enriched dataset with external metadata, saved to data/processed/ as the
   </verify>
   <done>
     Enrichment utilities exist that join external data via left join, add derived analysis columns, and calculate coverage statistics for documentation
-  </done>
-</task>
-
-<task type="auto">
-  <name>Execute external data scraping</name>
-  <files>scripts/06_enrich_external.py, data/external/huggingface_models.parquet</files>
-  <action>
-    Update scripts/06_enrich_external.py to execute web scraping:
-
-    Import functions from src.enrich and src.utils
-
-    Scraping pipeline:
-    1. Create data/external/ directory if not exists
-    2. Print "Starting external data collection..." to console
-    3. Call scrape_huggingface_models():
-       * Print progress messages (e.g., "Fetching HuggingFace leaderboard...")
-       * Handle errors gracefully
-       * Store result in huggingface_df variable
-    4. If huggingface_df is not empty:
-       * Save to data/external/huggingface_models.parquet
-       * Print f"Retrieved {huggingface_df.shape[0]} models from HuggingFace"
-    5. Optionally call scrape_provider_announcements():
-       * Scrape from multiple provider sources
-       * Save each to data/external/{provider}_announcements.parquet
-       * Print progress for each source
-    6. If all scraping fails (empty results):
-       * Print warning: "No external data retrieved. Will proceed with base dataset only."
-       * Print "Consider manual data entry for top 20 models."
-    7. Combine all external data into single DataFrame if multiple sources
-    8. Save combined external data to data/external/all_external_data.parquet
-
-    Use verbose logging to show progress
-    Implement rate limiting (1 second delay between requests)
-    Handle HTTP errors, timeouts, and parsing errors gracefully
-    Document any scraping issues in comments
-
-    Reference CONTEXT.md: "best-effort coverage - document coverage rate and proceed regardless"
-  </action>
-  <verify>
-    `python scripts/06_enrich_external.py` runs successfully (may produce warnings if scraping fails)
-    `test -f data/external/huggingface_models.parquet` or `test -f data/external/all_external_data.parquet` confirms external data saved
-    `ls data/external/*.parquet | wc -l` shows at least one external data file
-  </verify>
-  <done>
-    External data scraping executes successfully, retrieving model metadata from HuggingFace and/or provider sources, with results saved to data/external/ directory
   </done>
 </task>
 
@@ -304,21 +210,19 @@ Output: Enriched dataset with external metadata, saved to data/processed/ as the
 
 <verification>
 - [ ] src/enrich.py exists with all enrichment functions
-- [ ] scrape_huggingface_models function implements web scraping with rate limiting
 - [ ] enrich_with_external_data function performs left join with provenance tracking
 - [ ] add_derived_columns function creates analysis metrics
-- [ ] scripts/06_enrich_external.py imports from src.enrich
-- [ ] Running scripts/06_enrich_external.py completes without errors
-- [ ] data/external/ directory contains scraped data parquet files
+- [ ] calculate_enrichment_coverage function calculates coverage statistics
+- [ ] scripts/06_enrich_external.py executes complete pipeline
 - [ ] data/processed/ai_models_enriched.parquet exists with enrichment columns
 - [ ] Final dataset has derived columns (price_per_intelligence_point, model_tier, etc.)
 - [ ] reports/enrichment_coverage.md exists with coverage statistics
 </verification>
 
 <success_criteria>
-External data is scraped from HuggingFace and provider sources with provenance tracking, dataset is enriched via left join (preserving all models), derived analysis columns are created, coverage is documented, and final enriched dataset is saved for Phase 2 analysis.
+Dataset is enriched with external data via left join (preserving all models), derived analysis columns are created, coverage is documented, final enriched dataset is saved for Phase 2, and coverage report provides actionable insights.
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/01-data-pipeline-&-quality-assessment**---load,-clean,-validate,-and-enrich-the-benchmark-dataset/01-05-SUMMARY.md`
+After completion, create `.planning/phases/01-data-pipeline-&-quality-assessment**---load,-clean,-validate,-and-enrich-the-benchmark-dataset/01-05b-SUMMARY.md`
 </output>
