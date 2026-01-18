@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 ## Current Position
 
 Phase: 1 of 4 (Data Pipeline & Quality Assessment)
-Plan: 05a of 06 (Web scraping utilities for external data)
-Status: In progress - Plan 01-05a completed
-Last activity: 2026-01-18 — Completed plan 01-05a: Web scraping utilities and external data collection
+Plan: 04 of 06 (Distribution analysis and outlier detection)
+Status: In progress - Plan 01-04 completed
+Last activity: 2026-01-18 — Completed plan 01-04: Distribution analysis and outlier detection with Isolation Forest
 
 Progress: [████░░░░] 67% (4 of 6 plans complete)
 
@@ -20,21 +20,21 @@ Progress: [████░░░░] 67% (4 of 6 plans complete)
 
 **Velocity:**
 - Total plans completed: 4
-- Average duration: 4.5 minutes
-- Total execution time: 0.3 hours
+- Average duration: 4.75 minutes
+- Total execution time: 0.32 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 (Data Pipeline) | 4 | 6 | 4.5 min |
+| 1 (Data Pipeline) | 4 | 6 | 4.75 min |
 | 2 (Statistical Analysis) | 0 | ? | - |
 | 3 (Visualizations) | 0 | ? | - |
 | 4 (Narrative) | 0 | ? | - |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (3 min), 01-03b (5 min), 01-05a (2 min)
-- Trend: Consistent velocity ~4.5 min/plan
+- Last 5 plans: 01-01 (8 min), 01-02 (3 min), 01-03b (5 min), 01-04 (3 min)
+- Trend: Consistent velocity ~4.75 min/plan
 
 *Updated after each plan completion*
 
@@ -70,6 +70,19 @@ Recent decisions affecting current work:
 - Cleaned checkpoint available at data/interim/02_cleaned.parquet with proper data types
 - Missing value analysis documented in reports/missing_values.md with pattern analysis and recommendations
 
+**From Plan 01-04 (Distribution Analysis and Outlier Detection):**
+- Statistical analysis utilities created in src/analyze.py with scipy.stats and sklearn integration
+- Distribution analysis completed for 5 numerical variables: context_window, intelligence_index, price_usd, Speed(median token/s), Latency (First Answer Chunk /s)
+- Outlier detection using Isolation Forest with 5% contamination - 10 models flagged (5.32%)
+- All numerical variables are right-skewed (skewness > 0) - may require log transformation for parametric tests
+- Context Window has extreme skewness (9.63) and kurtosis (114.20) - heavy-tailed with extreme values
+- Intelligence Index distribution is approximately normal (skewness=0.67, kurtosis=2.63)
+- Price and Speed show moderate to high positive skewness - most models are low-cost, low-speed with few high-end outliers
+- Latency has extreme positive skewness (7.11) - most models have low latency with very few high-latency outliers
+- Outlier strategy: Flag but don't remove - preserving data for domain expert review (per CONTEXT.md)
+- Checkpoint saved with outlier flags: data/interim/03_distributions_analyzed.parquet
+- High-resolution distribution plots (300 DPI) generated for all numerical columns
+
 **From Plan 01-05a (Web Scraping Utilities):**
 - Web scraping with requests + BeautifulSoup (async httpx not needed for simple use case)
 - Rate limiting with 1 second delay between requests (time.sleep(1)) for respectful scraping
@@ -99,6 +112,13 @@ None yet.
 - Quality report script (05_quality_report.py) generates timestamped markdown reports
 - Outlier detection uses Isolation Forest with 5% contamination parameter
 
+**From Plan 01-04:**
+- 10 models flagged as outliers (5.32%) - these may require special handling in statistical analysis
+- All numerical variables are right-skewed - non-parametric methods or log transformation may be more appropriate
+- Context Window has extreme skewness (9.63) and kurtosis (114.20) - heavy-tailed distribution with extreme values (10M token context)
+- Statistical functions require explicit Float64 casting before numpy conversion to prevent type errors
+- Distributions are non-normal based on normality tests - parametric tests may not be appropriate
+
 **From Plan 01-05a:**
 - HuggingFace HTML selectors need adjustment for actual model data extraction (currently returns empty)
 - Provider announcement scraping has null model column values - will need fuzzy matching or manual mapping
@@ -108,7 +128,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-18 23:08-23:09 UTC (2 minutes)
-Stopped at: Completed plan 01-05a (Web scraping utilities and external data collection)
+Last session: 2026-01-18 23:08-23:12 UTC (4 minutes)
+Stopped at: Completed plan 01-04 (Distribution analysis and outlier detection)
 Resume file: None
-Next: Plan 01-05b (Merge and validate enriched dataset) or 01-06 (Final enrichment checkpoint)
+Next: Plan 01-05a (Web scraping utilities for external data) or 01-05b (Merge and validate enriched dataset)
