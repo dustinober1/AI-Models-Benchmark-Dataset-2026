@@ -54,12 +54,14 @@ Plans:
   5. Simple predictive models provide 2027 trend extrapolations with uncertainty discussion
   6. Null findings are reported alongside significant results to avoid publication bias
   7. Methodology is documented with explanations of statistical approaches and corrections applied
-**Plans**: TBD
+**Plans**: 5 plans in 3 waves
 
 Plans:
-- [ ] 02-01: Correlation and frontier analysis
-- [ ] 02-02: Provider segmentation and comparison
-- [ ] 02-03: Predictive modeling and uncertainty quantification
+- [ ] 02-01-PLAN.md — Resolve 34 duplicate model names using context window disambiguation
+- [ ] 02-02-PLAN.md — Compute Spearman correlation matrix with FDR correction and identify significant relationships
+- [ ] 02-03-PLAN.md — Identify Pareto-efficient models in multi-objective optimization space
+- [ ] 02-04-PLAN.md — Segment providers by performance characteristics using KMeans clustering
+- [ ] 02-05-PLAN.md — Perform group comparisons, bootstrap uncertainty quantification, and 2027 trend predictions
 
 ### Phase 3: Interactive Visualizations
 **Goal**: Create engaging Plotly visualizations that make insights accessible and shareable
@@ -111,6 +113,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Pipeline & Quality Assessment | 8/8 | ✓ Complete | 2026-01-18 |
-| 2. Statistical Analysis & Domain Insights | 0/3 | Not started | - |
+| 2. Statistical Analysis & Domain Insights | 0/5 | Not started | - |
 | 3. Interactive Visualizations | 0/3 | Not started | - |
 | 4. Narrative Synthesis & Publication | 0/3 | Not started | - |
