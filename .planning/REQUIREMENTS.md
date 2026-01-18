@@ -7,14 +7,14 @@
 
 ### Data Pipeline
 
-- [ ] **DATA-01**: Load ai_models_performance.csv using Polars with proper data types
-- [ ] **DATA-02**: Document data structure (columns, types, ranges, sample values)
-- [ ] **DATA-03**: Generate summary statistics for all numerical variables
-- [ ] **DATA-04**: Analyze distributions for each column (histograms, skewness, kurtosis)
-- [ ] **DATA-05**: Detect and document missing values, null handling strategy
-- [ ] **DATA-06**: Identify outliers using IQR method and document findings
-- [ ] **DATA-07**: Perform comprehensive data quality assessment with sanity checks
-- [ ] **DATA-08**: Enrich dataset with external data (model release dates, provider announcements, market events)
+- [x] **DATA-01**: Load ai_models_performance.csv using Polars with proper data types
+- [x] **DATA-02**: Document data structure (columns, types, ranges, sample values)
+- [x] **DATA-03**: Generate summary statistics for all numerical variables
+- [x] **DATA-04**: Analyze distributions for each column (histograms, skewness, kurtosis)
+- [x] **DATA-05**: Detect and document missing values, null handling strategy
+- [x] **DATA-06**: Identify outliers using IQR method and document findings
+- [x] **DATA-07**: Perform comprehensive data quality assessment with sanity checks
+- [x] **DATA-08**: Enrich dataset with external data (model release dates, provider announcements, market events)
 
 ### Statistical Analysis
 
@@ -51,7 +51,7 @@
 - [ ] **NARR-03**: Structure narrative as story: hook → exploration → discovery → conclusion
 - [ ] **NARR-04**: Add "so what?" explanations for each finding
 - [ ] **NARR-05**: Integrate external context (model release timeline, market events, provider news)
-- [ ] **NARR-06**: Document code comments explaining all analysis choices
+- [x] **NARR-06**: Document code comments explaining all analysis choices
 - [ ] **NARR-07**: Provide methodology explanation for statistical approaches
 - [ ] **NARR-08**: Include precise language avoiding correlation-causation fallacies
 - [ ] **NARR-09**: Add uncertainty discussion for all predictions
@@ -59,13 +59,13 @@
 
 ### Architecture
 
-- [ ] **ARCH-01**: Structure project with numbered scripts (01_load.py, 02_clean.py, 03_analyze_*.py)
-- [ ] **ARCH-02**: Implement script-as-module pattern (functions importable by notebook)
-- [ ] **ARCH-03**: Create data/ directory with raw/, interim/, processed/ subdirectories
-- [ ] **ARCH-04**: Build src/ directory for shared utilities and helper functions
-- [ ] **ARCH-05**: Implement Polars LazyFrame pipelines with checkpointing
+- [x] **ARCH-01**: Structure project with numbered scripts (01_load.py, 02_clean.py, 03_analyze_*.py)
+- [x] **ARCH-02**: Implement script-as-module pattern (functions importable by notebook)
+- [x] **ARCH-03**: Create data/ directory with raw/, interim/, processed/ subdirectories
+- [x] **ARCH-04**: Build src/ directory for shared utilities and helper functions
+- [x] **ARCH-05**: Implement Polars LazyFrame pipelines with checkpointing
 - [ ] **ARCH-06**: Create final narrative notebook that imports from scripts (not duplicate logic)
-- [ ] **ARCH-07**: Add requirements.txt with pinned versions for reproducibility
+- [x] **ARCH-07**: Add requirements.txt with pinned versions for reproducibility
 
 ## v2 Requirements
 
@@ -96,14 +96,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 1 | Pending |
-| DATA-04 | Phase 1 | Pending |
-| DATA-05 | Phase 1 | Pending |
-| DATA-06 | Phase 1 | Pending |
-| DATA-07 | Phase 1 | Pending |
-| DATA-08 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
+| DATA-02 | Phase 1 | Complete |
+| DATA-03 | Phase 1 | Complete |
+| DATA-04 | Phase 1 | Complete |
+| DATA-05 | Phase 1 | Complete |
+| DATA-06 | Phase 1 | Complete |
+| DATA-07 | Phase 1 | Complete |
+| DATA-08 | Phase 1 | Complete |
 | STAT-01 | Phase 2 | Pending |
 | STAT-02 | Phase 2 | Pending |
 | STAT-03 | Phase 2 | Pending |
@@ -131,24 +131,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NARR-03 | Phase 4 | Pending |
 | NARR-04 | Phase 4 | Pending |
 | NARR-05 | Phase 4 | Pending |
-| NARR-06 | Phase 1 | Pending |
+| NARR-06 | Phase 1 | Complete |
 | NARR-07 | Phase 2 | Pending |
 | NARR-08 | Phase 4 | Pending |
 | NARR-09 | Phase 2 | Pending |
 | NARR-10 | Phase 4 | Pending |
-| ARCH-01 | Phase 1 | Pending |
-| ARCH-02 | Phase 1 | Pending |
-| ARCH-03 | Phase 1 | Pending |
-| ARCH-04 | Phase 1 | Pending |
-| ARCH-05 | Phase 1 | Pending |
+| ARCH-01 | Phase 1 | Complete |
+| ARCH-02 | Phase 1 | Complete |
+| ARCH-03 | Phase 1 | Complete |
+| ARCH-04 | Phase 1 | Complete |
+| ARCH-05 | Phase 1 | Complete |
 | ARCH-06 | Phase 4 | Pending |
-| ARCH-07 | Phase 1 | Pending |
+| ARCH-07 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 51 total
+- Phase 1 complete: 15/51 (29%)
+- Phase 2 pending: 11/51 (22%)
+- Phase 3 pending: 11/51 (22%)
+- Phase 4 pending: 9/51 (18%)
 - Mapped to phases: 51
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2025-01-18*
-*Last updated: 2026-01-18 after roadmap creation*
+*Last updated: 2026-01-18 after Phase 1 completion*
