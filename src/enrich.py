@@ -203,10 +203,10 @@ def add_derived_columns(df: pl.DataFrame) -> pl.DataFrame:
 
     # Speed to intelligence ratio
     if "Speed(median token/s)" in derived_df.columns and "intelligence_index" in derived_df.columns:
-        # Convert Speed column to Float64 for division
+        # Cast Speed column to Float64 first (it may be String type)
         derived_df = derived_df.with_columns([
             pl.when(pl.col("intelligence_index") > 0)
-            .then(pl.col("Speed(median token/s)") / pl.col("intelligence_index"))
+            .then(pl.col("Speed(median token/s)").cast(pl.Float64) / pl.col("intelligence_index"))
             .otherwise(None)
             .alias("speed_intelligence_ratio")
         ])

@@ -10,12 +10,16 @@ Functions
 main()
     Execute external data scraping pipeline.
 
+main_enrich()
+    Execute enrichment pipeline (load, join external data, add derived columns).
+
 Notes
 -----
 - Implements rate limiting (1 second delay) for respectful scraping
 - Tracks provenance (source_url, retrieved_at, retrieved_by) for reproducibility
 - Handles failures gracefully - continues with base dataset if scraping fails
 - Saves scraped data to data/external/ directory
+- Enriches base dataset with external data and derived analysis columns
 """
 
 from datetime import datetime
@@ -24,7 +28,13 @@ from typing import Optional
 
 import polars as pl
 
-from src.enrich import scrape_huggingface_models, scrape_provider_announcements
+from src.enrich import (
+    scrape_huggingface_models,
+    scrape_provider_announcements,
+    enrich_with_external_data,
+    add_derived_columns,
+    calculate_enrichment_coverage
+)
 from src.utils import setup_logging
 
 
@@ -186,25 +196,253 @@ def main() -> pl.DataFrame:
     return combined_df
 
 
-if __name__ == "__main__":
-    # Execute external data scraping pipeline
-    external_data = main()
+def main_enrich() -> pl.DataFrame:
+    """
+    Execute enrichment pipeline to create final analysis-ready dataset.
 
-    # Print final summary
-    print("\n" + "=" * 60)
-    print("FINAL SUMMARY")
-    print("=" * 60)
-    print(f"Total external records: {external_data.height}")
-    print(f"Columns: {external_data.columns}")
+    Loads cleaned base dataset, joins with external data (if available),
+    adds derived analysis columns, calculates coverage statistics, and
+    saves the final enriched dataset for Phase 2.
 
-    if external_data.height > 0:
-        print("\nSample data (first 5 rows):")
-        print(external_data.head(5))
+    Returns
+    -------
+    pl.DataFrame
+        Final enriched dataset with all columns ready for analysis.
+
+    Examples
+    --------
+    >>> enriched_df = main_enrich()
+    >>> print(f"Final dataset: {enriched_df.shape}")
+    >>> print(enriched_df.columns)
+
+    Notes
+    -----
+    Pipeline steps:
+    1. Load cleaned dataset from data/interim/02_cleaned.parquet
+    2. Load external data from data/external/ (if exists and non-empty)
+    3. Standardize model names (handle case sensitivity)
+    4. Enrich with external data via left join on "Model" column
+    5. Add derived analysis columns (price_per_intelligence_point, etc.)
+    6. Calculate enrichment coverage statistics
+    7. Save final dataset to data/processed/ai_models_enriched.parquet
+
+    Error handling:
+    - Continues with base dataset if external data is empty/missing
+    - Handles model name mismatches gracefully (nulls in enrichment columns)
+    - Logs all enrichment steps for reproducibility
+
+    References
+    ----------
+    DATA-08: External data enrichment with provenance tracking
+    RESEARCH.md "Pitfall 5: External Data Enrichment Provenance Loss"
+    """
+    # Configure logging
+    logger = setup_logging(verbose=True)
+    logger.info("=" * 60)
+    logger.info("Starting enrichment pipeline")
+    logger.info("=" * 60)
+
+    # Step 1: Load cleaned dataset
+    logger.info("\n" + "=" * 60)
+    logger.info("Step 1: Loading cleaned dataset...")
+    logger.info("=" * 60)
+
+    cleaned_path = Path("data/interim/02_cleaned.parquet")
+    if not cleaned_path.exists():
+        logger.error(f"ERROR: Cleaned dataset not found at {cleaned_path}")
+        logger.error("Please run scripts/02_clean.py first")
+        raise FileNotFoundError(f"Cleaned dataset not found: {cleaned_path}")
+
+    base_df = pl.read_parquet(cleaned_path)
+    logger.info(f"Loaded cleaned dataset: {base_df.shape} rows x columns")
+    logger.info(f"Columns: {base_df.columns}")
+
+    # Step 2: Load external data (if exists)
+    logger.info("\n" + "=" * 60)
+    logger.info("Step 2: Loading external data...")
+    logger.info("=" * 60)
+
+    external_path = Path("data/external/all_external_data.parquet")
+    external_df = None
+
+    if external_path.exists():
+        external_df = pl.read_parquet(external_path)
+        logger.info(f"Loaded external data: {external_df.shape} rows x columns")
+
+        # Check if external data has any content
+        if external_df.height == 0:
+            logger.warning("External data is empty (0 rows)")
+            logger.warning("Proceeding without external enrichment")
+            external_df = None
+        else:
+            # Check if model column has any non-null values
+            if "model" in external_df.columns:
+                non_null_models = external_df.select(pl.col("model").drop_nulls()).height
+                if non_null_models == 0:
+                    logger.warning("External data has no model names (all nulls in 'model' column)")
+                    logger.warning("This means model name extraction failed during scraping")
+                    logger.warning("Proceeding without external enrichment")
+                    external_df = None
+                else:
+                    logger.info(f"External data has {non_null_models} models with names")
+            else:
+                logger.warning("External data missing 'model' column")
+                logger.warning("Proceeding without external enrichment")
+                external_df = None
     else:
-        print("\nNo external data retrieved.")
-        print("Note: Web scraping may have failed due to:")
-        print("  - Network connectivity issues")
-        print("  - Site structure changes (selectors need updates)")
-        print("  - Rate limiting or blocking by target sites")
-        print("  - Missing dependencies (requests, beautifulsoup4)")
-        print("\nConsider manual data entry for top 20 models.")
+        logger.warning(f"External data not found at {external_path}")
+        logger.warning("Proceeding without external enrichment")
+
+    # Step 3: Enrich with external data (if available)
+    logger.info("\n" + "=" * 60)
+    logger.info("Step 3: Enriching dataset...")
+    logger.info("=" * 60)
+
+    if external_df is not None:
+        # Standardize model names for better matching
+        # Convert to lowercase for case-insensitive join
+        base_df_with_key = base_df.with_columns([
+            pl.col("Model").alias("model_original")
+        ])
+
+        external_df_with_key = external_df.with_columns([
+            pl.col("model").str.strip().str.to_ascii().alias("model")
+        ])
+
+        # Perform left join
+        try:
+            enriched_df = enrich_with_external_data(
+                base_df_with_key,
+                external_df_with_key,
+                join_key="Model"
+            )
+            logger.info(f"Enriched dataset: {enriched_df.shape}")
+            logger.info(f"Coverage rate: {enriched_df.select(pl.col('coverage_rate').drop_nulls()).item():.2f}%")
+        except ValueError as e:
+            logger.error(f"ERROR: Enrichment failed: {e}")
+            logger.warning("Proceeding with base dataset only")
+            enriched_df = base_df.clone()
+    else:
+        logger.info("Proceeding without external enrichment (no valid external data)")
+        enriched_df = base_df.clone()
+
+    # Step 4: Add derived columns
+    logger.info("\n" + "=" * 60)
+    logger.info("Step 4: Adding derived analysis columns...")
+    logger.info("=" * 60)
+
+    enriched_df = add_derived_columns(enriched_df)
+    logger.info(f"Added derived columns: {enriched_df.shape}")
+
+    # List new derived columns
+    derived_cols = [
+        "price_per_intelligence_point",
+        "speed_intelligence_ratio",
+        "model_tier",
+        "log_context_window",
+        "price_per_1k_tokens"
+    ]
+    new_cols = [col for col in derived_cols if col in enriched_df.columns]
+    logger.info(f"New columns: {new_cols}")
+
+    # Step 5: Calculate enrichment coverage
+    logger.info("\n" + "=" * 60)
+    logger.info("Step 5: Calculating enrichment coverage...")
+    logger.info("=" * 60)
+
+    # Identify enrichment columns (external + derived)
+    enrichment_cols = []
+    if external_df is not None:
+        external_cols = [col for col in external_df.columns if col != "Model"]
+        enrichment_cols.extend(external_cols)
+    enrichment_cols.extend(new_cols)
+
+    # Add metadata columns
+    metadata_cols = ["enriched_at", "enrichment_source", "coverage_rate"]
+    enrichment_cols.extend([col for col in metadata_cols if col in enriched_df.columns])
+
+    coverage_stats = calculate_enrichment_coverage(enriched_df, enrichment_cols)
+
+    # Step 6: Save final enriched dataset
+    logger.info("\n" + "=" * 60)
+    logger.info("Step 6: Saving final enriched dataset...")
+    logger.info("=" * 60)
+
+    processed_dir = Path("data/processed")
+    processed_dir.mkdir(parents=True, exist_ok=True)
+
+    output_path = processed_dir / "ai_models_enriched.parquet"
+    enriched_df.write_parquet(output_path)
+    logger.info(f"Saved final enriched dataset to {output_path}")
+
+    # Final summary
+    logger.info("\n" + "=" * 60)
+    logger.info("Enrichment pipeline completed")
+    logger.info("=" * 60)
+    logger.info(f"Final dataset shape: {enriched_df.shape}")
+    logger.info(f"Output file: {output_path.absolute()}")
+    logger.info(f"File size: {output_path.stat().st_size / 1024:.1f} KB")
+
+    # Count models by tier
+    if "model_tier" in enriched_df.columns:
+        tier_counts = enriched_df.group_by("model_tier").count().sort("count", descending=True)
+        logger.info("\nModels by tier:")
+        for row in tier_counts.iter_rows(named=True):
+            logger.info(f"  - {row['model_tier']}: {row['count']} models")
+
+    # Count columns by type
+    logger.info("\nColumn summary:")
+    logger.info(f"  - Total columns: {enriched_df.width}")
+    logger.info(f"  - Original columns: {base_df.width}")
+    logger.info(f"  - External columns: {len([c for c in enrichment_cols if c in external_df.columns]) if external_df is not None else 0}")
+    logger.info(f"  - Derived columns: {len(new_cols)}")
+
+    logger.info("\n" + "=" * 60)
+    logger.info("Dataset ready for Phase 2: Statistical Analysis")
+    logger.info("=" * 60)
+
+    return enriched_df
+
+
+if __name__ == "__main__":
+    import sys
+
+    # Check command line arguments
+    if len(sys.argv) > 1 and sys.argv[1] == "--enrich":
+        # Run enrichment pipeline only
+        enriched_data = main_enrich()
+
+        # Print final summary
+        print("\n" + "=" * 60)
+        print("ENRICHMENT COMPLETE")
+        print("=" * 60)
+        print(f"Final dataset: {enriched_data.shape}")
+        print(f"Saved to: data/processed/ai_models_enriched.parquet")
+        print("\nReady for Phase 2: Statistical Analysis")
+    else:
+        # Run scraping pipeline (original behavior)
+        external_data = main()
+
+        # Print final summary
+        print("\n" + "=" * 60)
+        print("SCRAPING COMPLETE")
+        print("=" * 60)
+        print(f"Total external records: {external_data.height}")
+        print(f"Columns: {external_data.columns}")
+
+        if external_data.height > 0:
+            print("\nSample data (first 5 rows):")
+            print(external_data.head(5))
+            print("\nNow run with --enrich flag to create final dataset:")
+            print("  poetry run python scripts/06_enrich_external.py --enrich")
+        else:
+            print("\nNo external data retrieved.")
+            print("Note: Web scraping may have failed due to:")
+            print("  - Network connectivity issues")
+            print("  - Site structure changes (selectors need updates)")
+            print("  - Rate limiting or blocking by target sites")
+            print("  - Missing dependencies (requests, beautifulsoup4)")
+            print("\nConsider manual data entry for top 20 models.")
+            print("\nProceeding with base dataset only.")
+            print("Run with --enrich flag to create final dataset:")
+            print("  poetry run python scripts/06_enrich_external.py --enrich")
