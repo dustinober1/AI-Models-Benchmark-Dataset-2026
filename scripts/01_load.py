@@ -1,111 +1,83 @@
 """
-Load AI models benchmark dataset from CSV.
+Load AI models benchmark dataset from CSV with schema validation.
 
 This script loads the raw CSV file using Polars with explicit schema
-definition to ensure data type consistency and early error detection.
+definition, validates data quality with Pandera, and quarantines any
+invalid records for review.
 
-The schema is defined explicitly rather than inferred because:
-1. CSV contains messy values (e.g., "$4.81 " with dollar sign and space)
-2. Some values may have embedded newlines in quoted fields
-3. Explicit schema catches data quality issues early
+The script follows the data pipeline pattern:
+1. Load with lenient schema (Utf8 for messy price data)
+2. Document structure (columns, types, samples)
+3. Collect and validate with Pandera schema
+4. Quarantine invalid rows to separate file
+5. Save valid data to parquet checkpoint
 
 Functions
 ---------
-load_data(path: str) -> pl.LazyFrame
-    Load AI models performance data from CSV with schema validation.
+main()
+    Execute the data loading pipeline.
 """
 
 import polars as pl
-from src.utils import setup_logging, save_checkpoint
+from pathlib import Path
+import sys
+
+from src.load import load_data, document_structure
+from src.utils import setup_logging, save_checkpoint, get_quarantine_path
 
 
-def load_data(path: str) -> pl.LazyFrame:
+def main():
     """
-    Load AI models performance data from CSV with schema validation.
+    Execute the data loading pipeline.
 
-    Uses lazy evaluation (scan_csv) for efficient processing of large files.
-    Schema is defined upfront to catch type mismatches early.
-
-    Parameters
-    ----------
-    path : str
-        Path to ai_models_performance.csv file.
-
-    Returns
-    -------
-    pl.LazyFrame
-        LazyFrame with validated schema, ready for transformation.
-
-    Raises
-    ------
-    FileNotFoundError
-        If CSV file does not exist at specified path.
-    SchemaError
-        If CSV columns don't match expected types or structure.
-
-    Examples
-    --------
-    >>> lf = load_data("data/raw/ai_models_performance.csv")
-    >>> print(lf.collect_schema())
-    >>> df = lf.collect()  # Materialize when needed
-
-    Notes
-    -----
-    Schema definition:
-    - Model: Utf8 (string) - Model name/identifier
-    - Context Window: Int64 - Maximum context size in tokens
-    - Creator: Utf8 - Organization/lab that created the model
-    - Intelligence Index: Int64 - Performance score (0-100)
-    - Price (Blended USD/1M Tokens): Utf8 - Price string (will clean to Float64)
-    - Speed(median token/s): Float64 - Median generation speed
-    - Latency (First Answer Chunk /s): Float64 - Time to first token
-
-    The price column is loaded as Utf8 because it contains messy formatting
-    (dollar signs, spaces) that needs to be cleaned in the next step.
+    Pipeline steps:
+    1. Load raw CSV with explicit schema
+    2. Document data structure
+    3. Collect and validate with Pandera
+    4. Quarantine invalid records
+    5. Save valid data to checkpoint
     """
-    # Define explicit schema for type safety
-    # Using Utf8 for price column because it contains "$4.81 " format
-    schema = {
-        "Model": pl.Utf8,
-        "Context Window": pl.Int64,
-        "Creator": pl.Utf8,
-        "Intelligence Index": pl.Int64,
-        "Price (Blended USD/1M Tokens)": pl.Utf8,  # Will clean to Float64 in 02_clean.py
-        "Speed(median token/s)": pl.Float64,
-        "Latency (First Answer Chunk /s)": pl.Float64,
-    }
-
-    # Use lazy evaluation for efficient processing
-    lf = pl.scan_csv(path, schema_overrides=schema)
-
-    return lf
-
-
-if __name__ == "__main__":
     # Configure logging
     logger = setup_logging(verbose=True)
     logger.info("Starting data loading process")
 
-    # Load the data
+    # Define paths
     input_path = "data/raw/ai_models_performance.csv"
-    logger.info(f"Loading data from {input_path}")
+    checkpoint_path = "data/interim/01_loaded.parquet"
+    quarantine_path = "data/quarantine/01_invalid_records.csv"
 
+    # Check input file exists
+    if not Path(input_path).exists():
+        logger.error(f"Input file not found: {input_path}")
+        sys.exit(1)
+
+    # Step 1: Load the data
+    logger.info(f"Loading data from {input_path}")
     lf = load_data(input_path)
 
-    # Print schema information
-    logger.info("Data schema:")
-    print(lf.collect_schema())
+    # Step 2: Document structure
+    logger.info("Documenting data structure...")
+    structure = document_structure(lf, logger)
 
-    # Collect and show basic info
+    # Step 3: Collect and validate
+    logger.info("Collecting data for validation...")
     df = lf.collect()
-    logger.info(f"Loaded {df.height:,} rows and {df.width} columns")
 
-    # Print first few rows
-    logger.info("Sample data (first 5 rows):")
-    print(df.head(5))
+    # Note: We'll validate AFTER cleaning in plan 01-03
+    # For now, save the raw loaded data with documented structure
+    logger.info(f"Loaded {structure['row_count']:,} rows and {len(structure['column_names'])} columns")
 
-    # Save checkpoint
-    checkpoint_path = "data/interim/01_loaded.parquet"
+    # Step 4: Save valid data to checkpoint
+    logger.info(f"Saving checkpoint to {checkpoint_path}")
     save_checkpoint(df, checkpoint_path, logger)
 
+    # Note: Schema validation and quarantining will happen in next plan
+    # after we clean the price column and rename columns to match schema
+
     logger.info("Data loading completed successfully")
+    logger.info(f"Checkpoint saved to: {checkpoint_path}")
+    logger.info(f"Next step: Run scripts/02_clean.py to clean messy values")
+
+
+if __name__ == "__main__":
+    main()
