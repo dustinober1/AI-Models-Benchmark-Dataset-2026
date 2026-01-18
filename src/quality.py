@@ -29,6 +29,7 @@ generate_quality_report(df: pl.DataFrame, distributions_stats: dict, output_path
 import polars as pl
 from typing import Dict, Any, List
 from datetime import datetime
+from pathlib import Path
 
 
 def check_accuracy(df: pl.DataFrame) -> dict:
@@ -526,3 +527,653 @@ def perform_sanity_checks(df: pl.DataFrame) -> dict:
         "dimensions_failed": dimensions_failed,
         "critical_issues": critical_issues
     }
+
+
+def generate_quality_report(
+    df: pl.DataFrame,
+    distributions_stats: dict,
+    output_path: str
+) -> str:
+    """
+    Generate comprehensive quality assessment report in markdown format.
+
+    Creates a detailed report covering all 6 dimensions of data quality
+    with narrative interpretation, embedded visualizations, statistics tables,
+    and actionable recommendations for downstream analysis.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        DataFrame to analyze and report on.
+    distributions_stats : dict
+        Dictionary containing distribution statistics for numerical columns.
+        Expected format: {column_name: {stat: value, ...}}
+        Output from src.analyze.analyze_distribution() calls.
+    output_path : str
+        Path to save the quality report (Markdown format).
+
+    Returns
+    -------
+    str
+        Path to the generated report file.
+
+    Examples
+    --------
+    >>> df = pl.read_parquet("data/interim/03_distributions_analyzed.parquet")
+    >>> dist_stats = {"context_window": {"mean": 359898.94, "skewness": 9.63, ...}}
+    >>> report_path = generate_quality_report(df, dist_stats, "reports/quality_2026-01-18.md")
+    >>> print(f"Report generated: {report_path}")
+
+    Notes
+    -----
+    Report sections (per CONTEXT.md requirement for comprehensive reporting):
+    1. Header - Timestamp, dataset info, shape
+    2. Executive Summary - Overall quality score, key findings, critical issues
+    3. Data Dimensions (6 from RESEARCH.md):
+       - Accuracy - Range and constraint validation
+       - Completeness - Missing value analysis with table
+       - Consistency - Duplicate and format checks
+       - Validity - Schema and enum validation
+       - Integrity - Referential integrity (N/A for single table)
+       - Timeliness - Data freshness (static dataset)
+    4. Distribution Analysis - Statistics tables with interpretation
+    5. Outlier Analysis - Detection results and examples
+    6. Sanity Check Results - All checks with pass/fail status
+    7. Data Quality Issues Found - List with severity ratings
+    8. Next Steps - Readiness for Phase 2, known limitations
+    9. Metadata - Generation timestamp, pipeline version, dependencies
+
+    Narrative interpretation is added based on findings (CONTEXT.md:
+    "include narrative interpretation based on findings"). This includes
+    interpretation of skewness, kurtosis, normality tests, and actionable
+    recommendations based on the specific characteristics of this dataset.
+    """
+    # Run sanity checks to get all quality metrics
+    sanity_results = perform_sanity_checks(df)
+
+    # Generate timestamp
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Start building report
+    report_lines = [
+        "# Data Quality Assessment Report",
+        "",
+        f"**Generated:** {timestamp}",
+        f"**Dataset:** AI Models Benchmark Dataset 2026",
+        f"**Source File:** ai_models_enriched.parquet",
+        f"**Total Rows:** {df.height:,}",
+        f"**Total Columns:** {df.width}",
+        "",
+        "---",
+        "",
+        "## Executive Summary",
+        "",
+    ]
+
+    # Add overall quality score
+    overall_score = sanity_results["overall_quality_score"]
+    report_lines.extend([
+        f"**Overall Quality Score:** {overall_score:.1f}%",
+        "",
+        f"This report assesses the data quality across 6 dimensions: Accuracy, Completeness, Consistency, Validity, Integrity, and Timeliness.",
+        ""
+    ])
+
+    # Add key findings
+    report_lines.extend([
+        "**Key Findings:**",
+        ""
+    ])
+
+    # Add findings based on sanity check results
+    accuracy = sanity_results["accuracy"]
+    completeness = sanity_results["completeness"]
+    consistency = sanity_results["consistency"]
+    validity = sanity_results["validity"]
+
+    if accuracy["pass"]:
+        report_lines.append(f"- ✓ All numerical values are within expected ranges")
+    else:
+        report_lines.append(f"- ⚠ {accuracy['violation_count']} accuracy violations detected (see Accuracy section)")
+
+    if completeness["pass"]:
+        report_lines.append(f"- ✓ High data completeness: {completeness['completeness_percentage']:.1f}%")
+    else:
+        report_lines.append(f"- ⚠ Data completeness: {completeness['completeness_percentage']:.1f}% (target: 95%)")
+
+    if consistency["pass"]:
+        report_lines.append(f"- ✓ No duplicate model names found")
+    else:
+        report_lines.append(f"- ⚠ {consistency['duplicate_models']} duplicate model names detected")
+
+    if validity["pass"]:
+        report_lines.append(f"- ✓ All data values conform to expected formats")
+    else:
+        report_lines.append(f"- ⚠ {validity['impossible_combinations']} impossible data combinations detected")
+
+    report_lines.extend([
+        "",
+        "**Critical Issues:**",
+        ""
+    ])
+
+    if sanity_results["critical_issues"]:
+        for issue in sanity_results["critical_issues"]:
+            report_lines.append(f"- ⚠ {issue}")
+    else:
+        report_lines.append("- ✓ No critical issues found - data quality is acceptable for analysis")
+
+    report_lines.extend([
+        "",
+        "**Data Readiness for Analysis:**",
+        ""
+    ])
+
+    if overall_score >= 75:
+        report_lines.append("✓ **Ready for Phase 2: Statistical Analysis** - Data quality meets minimum standards for statistical testing and hypothesis evaluation.")
+    else:
+        report_lines.append("⚠ **Review recommended** - Data quality below threshold. Review critical issues before proceeding to statistical analysis.")
+
+    report_lines.extend([
+        "",
+        "---",
+        "",
+        "## Data Dimensions",
+        "",
+        "### 1. Accuracy",
+        "",
+        "Accuracy measures the extent to which data values are correct and within expected ranges.",
+        "",
+        "**Checks Performed:**",
+        "- Intelligence Index in range [0, 100]",
+        "- price_usd >= 0",
+        "- Speed(median token/s) >= 0",
+        "- Latency (First Answer Chunk /s) >= 0",
+        "- Context Window >= 0",
+        "",
+        f"**Result:** {'✓ PASS' if accuracy['pass'] else '✗ FAIL'}",
+        f"**Violations:** {accuracy['violation_count']}",
+        ""
+    ])
+
+    # Add violation details if any
+    if accuracy["violation_count"] > 0:
+        report_lines.append("**Violation Details:**")
+        report_lines.append("")
+        for check_name, violation_data in accuracy["violations"].items():
+            if violation_data["count"] > 0:
+                report_lines.append(f"- **{check_name}:** {violation_data['count']} violations")
+                if violation_data["examples"]:
+                    report_lines.append("  Examples:")
+                    for example in violation_data["examples"][:3]:
+                        report_lines.append(f"  - {example}")
+                report_lines.append("")
+
+    # Add Accuracy interpretation
+    report_lines.extend([
+        "**Interpretation:**",
+        ""
+    ])
+
+    if accuracy["pass"]:
+        report_lines.append("✓ All numerical values are within expected business logic ranges. No accuracy issues detected.")
+    else:
+        report_lines.append(f"⚠ {accuracy['violation_count']} values outside expected ranges. Review violations above for details.")
+
+    report_lines.extend([
+        "",
+        "---",
+        "",
+        "### 2. Completeness",
+        "",
+        "Completeness measures the extent to which data is complete (no missing values in required fields).",
+        "",
+        f"**Total Rows:** {completeness['total_rows']:,}",
+        f"**Rows Complete (0 nulls):** {completeness['rows_complete']:,}",
+        f"**Rows with Any Null:** {completeness['rows_with_any_null']:,}",
+        f"**Completeness Score:** {completeness['completeness_percentage']:.1f}%",
+        "",
+        f"**Result:** {'✓ PASS' if completeness['pass'] else '✗ FAIL'} (threshold: 95%)",
+        "",
+        "**Missing Values by Column:**",
+        "",
+        "| Column | Null Count | Null Percentage |",
+        "|--------|------------|-----------------|"
+    ])
+
+    # Add null counts table
+    for col, count in completeness["null_counts"].items():
+        pct = completeness["null_percentages"][col]
+        if pct > 0:
+            report_lines.append(f"| {col} | {count:,} | {pct:.2f}% |")
+
+    report_lines.extend([
+        "",
+        "**Interpretation:**",
+        ""
+    ])
+
+    if completeness["completeness_percentage"] >= 99:
+        report_lines.append("✓ Excellent data completeness - virtually all data is present.")
+    elif completeness["completeness_percentage"] >= 95:
+        report_lines.append(f"✓ High data completeness - {completeness['completeness_percentage']:.1f}% of data is complete.")
+    else:
+        report_lines.append(f"⚠ Data completeness below target: {completeness['completeness_percentage']:.1f}% (target: 95%)")
+
+    report_lines.extend([
+        "",
+        "**Analysis Note:** Missing Intelligence Index values (6 models, 3.19%) represent models without IQ scores, not data quality issues. These models should be filtered out for intelligence-specific analyses (n=182 valid models).",
+        "",
+        "---",
+        "",
+        "### 3. Consistency",
+        "",
+        "Consistency measures the extent to which data is consistent in format, type, and representation.",
+        "",
+        f"**Result:** {'✓ PASS' if consistency['pass'] else '✗ FAIL'}",
+        "",
+        "**Checks Performed:**",
+        ""
+    ])
+
+    report_lines.append(f"- Duplicate model names: {consistency['duplicate_models']} found")
+    if consistency["duplicate_models"] > 0 and consistency["duplicate_examples"]:
+        report_lines.append("  Examples:")
+        for example in consistency["duplicate_examples"][:5]:
+            report_lines.append(f"  - {example}")
+
+    report_lines.extend([
+        f"- Unrealistic context windows (>2M tokens): {consistency['context_window_unrealistic']}",
+        f"- Creator name inconsistencies (case variations): {consistency['creator_inconsistencies']}",
+        f"- Extreme price/intelligence outliers: {consistency['price_intelligence_outliers']}",
+        "",
+        "**Interpretation:**",
+        ""
+    ])
+
+    if consistency["pass"]:
+        report_lines.append("✓ No consistency issues detected - data format and representation are uniform.")
+    else:
+        if consistency["duplicate_models"] > 0:
+            report_lines.append(f"⚠ {consistency['duplicate_models']} duplicate model names detected - review for data entry errors.")
+        if consistency["context_window_unrealistic"] > 0:
+            report_lines.append(f"⚠ {consistency['context_window_unrealistic']} context windows exceed 2M tokens - verify values.")
+
+    report_lines.extend([
+        "",
+        "---",
+        "",
+        "### 4. Validity",
+        "",
+        "Validity measures the extent to which data values conform to expected formats and value sets.",
+        "",
+        f"**Result:** {'✓ PASS' if validity['pass'] else '✗ FAIL'}",
+        "",
+        "**Checks Performed:**",
+        f"- Creator values in expected set: {validity['unexpected_creators']} unexpected values",
+        f"- Impossible data combinations (speed=0 but latency>0): {validity['impossible_combinations']}",
+        "",
+        "**Interpretation:**",
+        ""
+    ])
+
+    if validity["pass"]:
+        report_lines.append("✓ All data values conform to expected formats and business logic constraints.")
+    else:
+        if validity["impossible_combinations"] > 0:
+            report_lines.append(f"⚠ {validity['impossible_combinations']} impossible data combinations detected - review for data entry errors.")
+
+    report_lines.extend([
+        "",
+        "---",
+        "",
+        "### 5. Integrity",
+        "",
+        "Integrity measures the extent to which data maintains referential integrity across tables and relationships.",
+        "",
+        "**Result:** N/A - Single table dataset (no foreign key relationships to validate)",
+        "",
+        "**Note:** This dataset is a single flattened table with no joins to external tables. Referential integrity checks are not applicable.",
+        "",
+        "---",
+        "",
+        "### 6. Timeliness",
+        "",
+        "Timeliness measures the extent to which data is current and up-to-date.",
+        "",
+        "**Result:** N/A - Static dataset (no temporal dimension)",
+        "",
+        "**Note:** This is a static benchmark dataset captured at a point in time (2026-01-18). There is no temporal component to assess for freshness.",
+        "",
+        "---",
+        "",
+        "## Distribution Analysis",
+        "",
+        "This section summarizes distribution statistics for all numerical variables, including skewness, kurtosis, and normality test results.",
+        ""
+    ])
+
+    # Add distribution statistics table
+    numerical_columns = ["context_window", "intelligence_index", "price_usd", "Speed(median token/s)", "Latency (First Answer Chunk /s)"]
+    report_lines.extend([
+        "| Column | Count | Mean | Std | Median | Min | Max | Skewness | Kurtosis | Normal? |",
+        "|--------|-------|------|-----|--------|-----|-----|----------|----------|---------|"
+    ])
+
+    for col in numerical_columns:
+        if col in distributions_stats:
+            stats = distributions_stats[col]
+            normality_result = stats.get("normality_test", {})
+            p_value = normality_result.get("p_value", None)
+
+            # Determine if normally distributed (p >= 0.05)
+            is_normal = p_value is not None and p_value >= 0.05
+            normal_str = "Yes" if is_normal else "No"
+
+            report_lines.append(
+                f"| {col} | {stats.get('count', 0):,} | "
+                f"{stats.get('mean', 0):.2f} | "
+                f"{stats.get('std', 0):.2f} | "
+                f"{stats.get('median', 0):.2f} | "
+                f"{stats.get('min', 0):.2f} | "
+                f"{stats.get('max', 0):.2f} | "
+                f"{stats.get('skewness', 0):.2f} | "
+                f"{stats.get('kurtosis', 0):.2f} | "
+                f"{normal_str} |"
+            )
+
+    report_lines.extend([
+        "",
+        "**Visualizations:**",
+        ""
+    ])
+
+    # Add links to distribution plots
+    for col in numerical_columns:
+        safe_filename = col.replace(" ", "_").replace("/", "_").replace("(", "").replace(")", "")
+        report_lines.append(f"- **{col}**: ![Distribution](figures/{safe_filename}_distribution.png)")
+
+    report_lines.extend([
+        "",
+        "**Distribution Interpretation:**",
+        ""
+    ])
+
+    # Add narrative interpretation for each numerical column
+    for col in numerical_columns:
+        if col in distributions_stats:
+            stats = distributions_stats[col]
+            skewness = stats.get("skewness", 0)
+            kurtosis = stats.get("kurtosis", 0)
+            normality_result = stats.get("normality_test", {})
+            p_value = normality_result.get("p_value", None)
+
+            # Interpret skewness
+            if abs(skewness) < 0.5:
+                skew_interp = "approximately symmetric"
+            elif skewness > 0:
+                skew_interp = "right-skewed (tail extends toward higher values)"
+            else:
+                skew_interp = "left-skewed (tail extends toward lower values)"
+
+            # Interpret kurtosis
+            if kurtosis < 3:
+                kurt_interp = "light-tailed (fewer outliers than normal distribution)"
+            else:
+                kurt_interp = "heavy-tailed (more outliers than normal distribution)"
+
+            # Interpret normality
+            if p_value is None:
+                norm_interp = "Insufficient data for normality test"
+            elif p_value >= 0.05:
+                norm_interp = "Normally distributed (p >= 0.05)"
+            else:
+                norm_interp = "Not normally distributed (p < 0.05)"
+
+            report_lines.extend([
+                f"**{col}:**",
+                f"- Skewness: {skewness:.2f} - {skew_interp}",
+                f"- Kurtosis: {kurtosis:.2f} - {kurt_interp}",
+                f"- Normality: {norm_interp}",
+                ""
+            ])
+
+    report_lines.extend([
+        "**Implications for Statistical Analysis:**",
+        ""
+    ])
+
+    # Add analysis implications
+    all_non_normal = all(
+        distributions_stats.get(col, {}).get("normality_test", {}).get("p_value", 1) < 0.05
+        for col in numerical_columns if col in distributions_stats
+    )
+
+    if all_non_normal:
+        report_lines.append("⚠ All numerical variables are non-normally distributed. Non-parametric statistical methods (e.g., Spearman correlation, Mann-Whitney U test) are recommended over parametric tests (e.g., Pearson correlation, t-test).")
+    else:
+        report_lines.append("✓ Some variables are normally distributed. Both parametric and non-parametric methods may be appropriate depending on the specific analysis.")
+
+    report_lines.extend([
+        "",
+        "---",
+        "",
+        "## Outlier Analysis",
+        ""
+    ])
+
+    # Add outlier detection results
+    if "is_outlier" in df.columns:
+        outlier_count = df.filter(pl.col("is_outlier") == True).height
+        outlier_pct = (outlier_count / df.height * 100) if df.height > 0 else 0
+
+        report_lines.extend([
+            f"- **Detection Method:** Isolation Forest (contamination=5%, random_state=42)",
+            f"- **Outliers Detected:** {outlier_count} models ({outlier_pct:.2f}%)",
+            f"- **Inliers:** {df.height - outlier_count} models ({100 - outlier_pct:.2f}%)",
+            ""
+        ])
+
+        # Add outlier examples
+        if outlier_count > 0:
+            outliers_df = df.filter(pl.col("is_outlier") == True).sort("outlier_score").head(10)
+
+            report_lines.extend([
+                "**Outlier Examples (Top 10 by anomaly score):**",
+                "",
+                "| Model | Creator | Price | Intelligence | Speed | Latency | Outlier Score |",
+                "|-------|---------|-------|--------------|-------|---------|---------------|"
+            ])
+
+            for row in outliers_df.to_dicts():
+                report_lines.append(
+                    f"| {row.get('Model', 'N/A')} | {row.get('Creator', 'N/A')} | "
+                    f"${row.get('price_usd', 0):.2f} | "
+                    f"{row.get('Intelligence Index', 'N/A')} | "
+                    f"{row.get('Speed(median token/s)', 0):.1f} | "
+                    f"{row.get('Latency (First Answer Chunk /s)', 0):.2f} | "
+                    f"{row.get('outlier_score', 0):.3f} |"
+                )
+
+        report_lines.extend([
+            "",
+            "**Outlier Interpretation:**",
+            ""
+        ])
+
+        if outlier_count > 0:
+            report_lines.extend([
+                f"⚠ {outlier_count} models ({outlier_pct:.2f}%) flagged as multivariate outliers based on price, speed, latency, and intelligence index.",
+                "",
+                "**Recommendations:**",
+                "- Outliers are preserved in the dataset (per STATE.md decision) for domain expert review",
+                "- Consider analyzing models with and without outliers to assess impact on conclusions",
+                "- Outliers may represent legitimate high-performance models (e.g., GPT-5.2, Claude Opus 4.5) rather than data errors",
+                "- For correlation analysis, consider computing metrics with and without outliers to assess robustness"
+            ])
+        else:
+            report_lines.append("✓ No outliers detected - all models fall within expected multivariate patterns.")
+
+    report_lines.extend([
+        "",
+        "---",
+        "",
+        "## Sanity Check Results",
+        "",
+        "Summary of all sanity check results across 4 quality dimensions:",
+        "",
+        "| Dimension | Status | Score | Details |",
+        "|-----------|--------|-------|---------|"
+    ])
+
+    # Add sanity check summary table
+    report_lines.append(f"| Accuracy | {'✓ PASS' if accuracy['pass'] else '✗ FAIL'} | {'100%' if accuracy['pass'] else '0%'} | {accuracy['violation_count']} violations |")
+    report_lines.append(f"| Completeness | {'✓ PASS' if completeness['pass'] else '✗ FAIL'} | {completeness['completeness_percentage']:.1f}% | {completeness['rows_with_any_null']} rows with nulls |")
+    report_lines.append(f"| Consistency | {'✓ PASS' if consistency['pass'] else '✗ FAIL'} | {'100%' if consistency['pass'] else '0%'} | {consistency['duplicate_models']} duplicates |")
+    report_lines.append(f"| Validity | {'✓ PASS' if validity['pass'] else '✗ FAIL'} | {'100%' if validity['pass'] else '0%'} | {validity['impossible_combinations']} impossible combinations |")
+
+    report_lines.extend([
+        "",
+        f"**Dimensions Passed:** {sanity_results['dimensions_passed']}/4",
+        f"**Dimensions Failed:** {sanity_results['dimensions_failed']}/4",
+        f"**Overall Quality Score:** {sanity_results['overall_quality_score']:.1f}%",
+        ""
+    ])
+
+    # Add data quality issues found
+    report_lines.extend([
+        "---",
+        "",
+        "## Data Quality Issues Found",
+        "",
+        "Summary of all data quality issues discovered during the pipeline:",
+        "",
+        "| Issue | Severity | Count | Recommendation |",
+        "|-------|----------|-------|----------------|"
+    ])
+
+    # Add issues from all dimensions
+    issues_found = []
+
+    if accuracy["violation_count"] > 0:
+        issues_found.append(("Accuracy violations", "Warning" if accuracy["violation_count"] < 10 else "Critical", accuracy["violation_count"], "Review out-of-range values"))
+
+    if completeness["rows_with_any_null"] > 0:
+        issues_found.append(("Missing values", "Info", completeness["rows_with_any_null"], "Filter for intelligence-specific analyses (n=182)"))
+
+    if consistency["duplicate_models"] > 0:
+        issues_found.append(("Duplicate models", "Critical", consistency["duplicate_models"], "Review for data entry errors"))
+
+    if consistency["context_window_unrealistic"] > 0:
+        issues_found.append(("Unrealistic context windows", "Warning", consistency["context_window_unrealistic"], "Verify values > 2M tokens"))
+
+    if validity["impossible_combinations"] > 0:
+        issues_found.append(("Impossible data combinations", "Critical", validity["impossible_combinations"], "Review speed/latency logic"))
+
+    if not issues_found:
+        report_lines.append("| None | - | - | No issues detected |")
+    else:
+        for issue, severity, count, recommendation in issues_found:
+            report_lines.append(f"| {issue} | {severity} | {count} | {recommendation} |")
+
+    report_lines.extend([
+        "",
+        "---",
+        "",
+        "## Next Steps",
+        "",
+        "### Readiness for Phase 2: Statistical Analysis",
+        ""
+    ])
+
+    if overall_score >= 75:
+        report_lines.extend([
+            "✓ **READY FOR PHASE 2** - Data quality meets minimum standards for statistical analysis.",
+            ""
+        ])
+    else:
+        report_lines.extend([
+            "⚠ **REVIEW RECOMMENDED** - Address critical issues before proceeding to Phase 2.",
+            ""
+        ])
+
+    report_lines.extend([
+        "**Known Limitations to Consider:**",
+        ""
+    ])
+
+    # Add known limitations based on STATE.md
+    limitations = [
+        "6 models lack intelligence_index scores - filter to n=182 for intelligence-specific analyses",
+        "All numerical variables are right-skewed - non-parametric methods recommended",
+        "Context Window has extreme skewness (9.63) - log transformation may be appropriate",
+        "10 models flagged as outliers (5.32%) - assess impact on correlation analysis",
+        "External data enrichment failed (0% coverage) - temporal analysis not possible",
+        "Model tier classification: 67.6% unknown - limits tier-based analysis power"
+    ]
+
+    for limitation in limitations:
+        report_lines.append(f"- {limitation}")
+
+    report_lines.extend([
+        "",
+        "**Recommended Preprocessing for Specific Analyses:**",
+        "",
+        "**Correlation Analysis:**",
+        "- Use Spearman rank correlation (non-parametric, robust to skewness)",
+        "- Consider log-transformation for Context Window (extreme skewness: 9.63)",
+        "- Compute correlations with and without outliers to assess robustness",
+        "",
+        "**Hypothesis Testing:**",
+        "- Use Mann-Whitney U test or Kruskal-Wallis test (non-parametric alternatives to t-test/ANOVA)",
+        "- Filter to n=182 models for intelligence-specific tests (exclude null IQ scores)",
+        "",
+        "**Distribution Analysis:**",
+        "- All variables are non-normally distributed - avoid parametric tests assuming normality",
+        "- Consider median and IQR for descriptive statistics (robust to outliers)",
+        "- Use bootstrap methods for confidence intervals if needed",
+        "",
+        "**Phase 2 Starting Points:**",
+        "- Dataset: data/processed/ai_models_enriched.parquet (188 models, 16 columns)",
+        "- Derived metrics available: price_per_intelligence_point, speed_intelligence_ratio, model_tier, log_context_window",
+        "- Distribution plots: reports/figures/ (5 numerical variables)",
+        "",
+        "---",
+        "",
+        "## Metadata",
+        "",
+        f"**Generation Timestamp:** {timestamp}",
+        f"**Pipeline Version:** Phase 1 - Data Pipeline & Quality Assessment",
+        f"**Plan:** 01-06 (Quality Report Generation)",
+        "",
+        "**Dependencies:**",
+        "- polars >= 1.0.0",
+        "- scipy >= 1.15.0",
+        "- scikit-learn >= 1.6.0",
+        "- matplotlib >= 3.10.0",
+        "- seaborn >= 0.13.0",
+        "",
+        "**Data Sources:**",
+        "- Raw data: ai_models_performance.csv (Kaggle AI Models Benchmark Dataset 2026)",
+        "- Processed data: data/processed/ai_models_enriched.parquet",
+        "- Distribution statistics: src.analyze.analyze_distribution()",
+        "",
+        "**Quality Dimensions Assessed:**",
+        "1. Accuracy - Range and constraint validation",
+        "2. Completeness - Missing value analysis",
+        "3. Consistency - Duplicate and format checking",
+        "4. Validity - Schema and business logic validation",
+        "5. Integrity - Referential integrity (N/A - single table)",
+        "6. Timeliness - Data freshness (N/A - static dataset)",
+        "",
+        "*End of Report*"
+    ])
+
+    # Write report to file
+    output_path_obj = Path(output_path)
+    output_path_obj.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(output_path, 'w') as f:
+        f.write('\n'.join(report_lines))
+
+    return str(output_path)
