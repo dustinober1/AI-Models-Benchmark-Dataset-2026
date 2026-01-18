@@ -10,30 +10,30 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 ## Current Position
 
 Phase: 1 of 4 (Data Pipeline & Quality Assessment)
-Plan: 02 of 06 (Load data with schema validation)
-Status: In progress - Plan 01-02 completed
-Last activity: 2026-01-18 — Completed plan 01-02: Load data with schema validation
+Plan: 03a of 08 (Data cleaning utilities implementation)
+Status: In progress - Plan 01-03a completed
+Last activity: 2026-01-18 — Completed plan 01-03a: Data cleaning utilities
 
-Progress: [██░░░░░░░░] 33% (2 of 6 plans complete)
+Progress: [███░░░░░░] 38% (3 of 8 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 6 minutes
-- Total execution time: 0.18 hours
+- Total plans completed: 3
+- Average duration: 5 minutes
+- Total execution time: 0.25 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 (Data Pipeline) | 2 | 6 | 6 min |
+| 1 (Data Pipeline) | 3 | 15 | 5 min |
 | 2 (Statistical Analysis) | 0 | ? | - |
 | 3 (Visualizations) | 0 | ? | - |
 | 4 (Narrative) | 0 | ? | - |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (3 min)
+- Last 5 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min)
 - Trend: Velocity improving, infrastructure foundation accelerating development
 
 *Updated after each plan completion*
@@ -61,6 +61,16 @@ Recent decisions affecting current work:
 - Intelligence Index has "--" placeholder for missing values requiring null handling
 - Dataset contains 188 models from 37 creators documented in comprehensive structure report
 
+**From Plan 01-03a (Data Cleaning Utilities):**
+- Polars API: str.strip_chars() instead of str.strip() for whitespace removal (Polars 1.x compatibility)
+- Polars API: str.replace() requires literal=True for non-regex string replacements
+- Error handling: Use strict=False casting to preserve null values instead of failing on conversion errors
+- Validation approach: Add flag columns (*_valid, *_out_of_range) instead of dropping invalid rows
+- Missing value strategy: Default to leave nulls in place (None strategy) per CONTEXT.md guidance
+- Cleaning function pattern: Accept LazyFrame, return LazyFrame with new columns, preserve originals
+- Configurable missing value strategies: drop, forward_fill, backward_fill, mean, median, zero, leave
+- src/clean.py provides 4 reusable functions: clean_price_column, clean_intelligence_index, analyze_missing_values, handle_missing_values
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
@@ -84,7 +94,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-18 22:55-22:58 UTC (3 minutes)
-Stopped at: Completed plan 01-02 (Load data with schema validation)
+Last session: 2026-01-18 23:00-23:04 UTC (4 minutes)
+Stopped at: Completed plan 01-03a (Data cleaning utilities)
 Resume file: None
-Next: Plan 01-03 (Clean messy values and convert to proper types)
+Next: Plan 01-03b (Execute data cleaning pipeline and create checkpoint)
