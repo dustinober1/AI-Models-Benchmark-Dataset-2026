@@ -10,31 +10,31 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 ## Current Position
 
 Phase: 1 of 4 (Data Pipeline & Quality Assessment)
-Plan: 03b of 06 (Execute data cleaning pipeline)
-Status: In progress - Plan 01-03b completed
-Last activity: 2026-01-18 — Completed plan 01-03b: Execute cleaning pipeline and create checkpoint
+Plan: 05a of 06 (Web scraping utilities for external data)
+Status: In progress - Plan 01-05a completed
+Last activity: 2026-01-18 — Completed plan 01-05a: Web scraping utilities and external data collection
 
-Progress: [███░░░░░░] 50% (3 of 6 plans complete)
+Progress: [████░░░░] 67% (4 of 6 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 5 minutes
-- Total execution time: 0.25 hours
+- Total plans completed: 4
+- Average duration: 4.5 minutes
+- Total execution time: 0.3 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 (Data Pipeline) | 3 | 6 | 5 min |
+| 1 (Data Pipeline) | 4 | 6 | 4.5 min |
 | 2 (Statistical Analysis) | 0 | ? | - |
 | 3 (Visualizations) | 0 | ? | - |
 | 4 (Narrative) | 0 | ? | - |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (3 min), 01-03b (5 min)
-- Trend: Consistent velocity ~5 min/plan
+- Last 5 plans: 01-01 (8 min), 01-02 (3 min), 01-03b (5 min), 01-05a (2 min)
+- Trend: Consistent velocity ~4.5 min/plan
 
 *Updated after each plan completion*
 
@@ -70,6 +70,16 @@ Recent decisions affecting current work:
 - Cleaned checkpoint available at data/interim/02_cleaned.parquet with proper data types
 - Missing value analysis documented in reports/missing_values.md with pattern analysis and recommendations
 
+**From Plan 01-05a (Web Scraping Utilities):**
+- Web scraping with requests + BeautifulSoup (async httpx not needed for simple use case)
+- Rate limiting with 1 second delay between requests (time.sleep(1)) for respectful scraping
+- Provenance tracking: All scraped data includes source_url, retrieved_at, retrieved_by columns
+- Graceful error handling: Functions return empty DataFrame with correct schema on failure
+- Best-effort coverage: Pipeline continues with nulls if scraping fails
+- Library availability check: REQUESTS_AVAILABLE flag handles missing dependencies gracefully
+- HTML selectors require adjustment: HuggingFace scraping returned empty (actual page structure inspection needed)
+- Provider announcements partial success: 6 announcements retrieved, but model extraction needs refinement
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
@@ -89,11 +99,16 @@ None yet.
 - Quality report script (05_quality_report.py) generates timestamped markdown reports
 - Outlier detection uses Isolation Forest with 5% contamination parameter
 
+**From Plan 01-05a:**
+- HuggingFace HTML selectors need adjustment for actual model data extraction (currently returns empty)
+- Provider announcement scraping has null model column values - will need fuzzy matching or manual mapping
+- External data coverage limited (6 announcements, 0 models) - may need manual entry for top 20 models
+
 **No blockers identified.**
 
 ## Session Continuity
 
-Last session: 2026-01-18 23:00-23:05 UTC (5 minutes)
-Stopped at: Completed plan 01-03b (Execute data cleaning pipeline)
+Last session: 2026-01-18 23:08-23:09 UTC (2 minutes)
+Stopped at: Completed plan 01-05a (Web scraping utilities and external data collection)
 Resume file: None
-Next: Plan 01-04 (Distribution analysis and statistics)
+Next: Plan 01-05b (Merge and validate enriched dataset) or 01-06 (Final enrichment checkpoint)
