@@ -29,12 +29,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Dataset is enriched with external data (model release dates, provider announcements, market events)
   4. Project structure follows numbered script pattern (01_load.py, 02_clean.py, 03_analyze_*.py) with data/ and src/ directories
   5. All code is documented with comments explaining analysis choices and data handling decisions
-**Plans**: TBD
+**Plans**: 6 plans in 4 waves
 
 Plans:
-- [ ] 01-01: Load data and validate schema
-- [ ] 01-02: Analyze distributions and detect anomalies
-- [ ] 01-03: Enrich dataset with external data sources
+- [ ] 01-01-PLAN.md — Initialize project structure, Poetry dependencies, and script templates
+- [ ] 01-02-PLAN.md — Load data with schema validation and document structure
+- [ ] 01-03-PLAN.md — Clean messy data values and handle missing data
+- [ ] 01-04-PLAN.md — Analyze distributions and detect outliers using statistical methods
+- [ ] 01-05-PLAN.md — Enrich dataset with external data sources and provenance tracking
+- [ ] 01-06-PLAN.md — Generate comprehensive quality assessment report
 
 ### Phase 2: Statistical Analysis & Domain Insights
 **Goal**: Discover quantitative insights about AI model performance, pricing, and market dynamics
@@ -104,7 +107,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Pipeline & Quality Assessment | 0/3 | Not started | - |
+| 1. Data Pipeline & Quality Assessment | 0/6 | Planned | - |
 | 2. Statistical Analysis & Domain Insights | 0/3 | Not started | - |
 | 3. Interactive Visualizations | 0/3 | Not started | - |
 | 4. Narrative Synthesis & Publication | 0/3 | Not started | - |
