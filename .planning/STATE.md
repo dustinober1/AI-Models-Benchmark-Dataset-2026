@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 ## Current Position
 
 Phase: 1 of 4 (Data Pipeline & Quality Assessment)
-Plan: 03a of 08 (Data cleaning utilities implementation)
-Status: In progress - Plan 01-03a completed
-Last activity: 2026-01-18 — Completed plan 01-03a: Data cleaning utilities
+Plan: 03b of 06 (Execute data cleaning pipeline)
+Status: In progress - Plan 01-03b completed
+Last activity: 2026-01-18 — Completed plan 01-03b: Execute cleaning pipeline and create checkpoint
 
-Progress: [███░░░░░░] 38% (3 of 8 plans complete)
+Progress: [███░░░░░░] 50% (3 of 6 plans complete)
 
 ## Performance Metrics
 
@@ -27,14 +27,14 @@ Progress: [███░░░░░░] 38% (3 of 8 plans complete)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 (Data Pipeline) | 3 | 15 | 5 min |
+| 1 (Data Pipeline) | 3 | 6 | 5 min |
 | 2 (Statistical Analysis) | 0 | ? | - |
 | 3 (Visualizations) | 0 | ? | - |
 | 4 (Narrative) | 0 | ? | - |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min)
-- Trend: Velocity improving, infrastructure foundation accelerating development
+- Last 5 plans: 01-01 (8 min), 01-02 (3 min), 01-03b (5 min)
+- Trend: Consistent velocity ~5 min/plan
 
 *Updated after each plan completion*
 
@@ -61,15 +61,14 @@ Recent decisions affecting current work:
 - Intelligence Index has "--" placeholder for missing values requiring null handling
 - Dataset contains 188 models from 37 creators documented in comprehensive structure report
 
-**From Plan 01-03a (Data Cleaning Utilities):**
-- Polars API: str.strip_chars() instead of str.strip() for whitespace removal (Polars 1.x compatibility)
-- Polars API: str.replace() requires literal=True for non-regex string replacements
-- Error handling: Use strict=False casting to preserve null values instead of failing on conversion errors
-- Validation approach: Add flag columns (*_valid, *_out_of_range) instead of dropping invalid rows
-- Missing value strategy: Default to leave nulls in place (None strategy) per CONTEXT.md guidance
-- Cleaning function pattern: Accept LazyFrame, return LazyFrame with new columns, preserve originals
-- Configurable missing value strategies: drop, forward_fill, backward_fill, mean, median, zero, leave
-- src/clean.py provides 4 reusable functions: clean_price_column, clean_intelligence_index, analyze_missing_values, handle_missing_values
+**From Plan 01-03b (Execute Data Cleaning Pipeline):**
+- Data quality: 96.81% completeness with only 6 null values (3.19%) in intelligence_index column
+- Missing value strategy: Preserve nulls in intelligence_index - no imputation needed for optional metric
+- Context window parsing: Suffixes parsed using regex (2m -> 2,000,000, 262k -> 262,000)
+- Schema validation deferred: Skip Pandera validation until after null handling in later plan
+- Core columns (Model, Creator, Price, Speed, Latency, Context Window) are 100% complete
+- Cleaned checkpoint available at data/interim/02_cleaned.parquet with proper data types
+- Missing value analysis documented in reports/missing_values.md with pattern analysis and recommendations
 
 ### Pending Todos
 
@@ -84,9 +83,9 @@ None yet.
 **Known considerations for next phase:**
 - Scripts use numeric prefixes (01-06) which require `PYTHONPATH=.` for running as modules
 - Poetry 2.x doesn't have `poetry export` - requirements.txt must be regenerated manually if dependencies change
-- Plan 01-03 (Data Cleaning) must parse Context Window suffixes (k/m) and strip Price formatting ($)
-- Pandera schema validation should run after cleaning when proper types are established
-- Intelligence Index "--" values require null handling during cleaning
+- Context window parsing completed - values now Int64 token counts (400000, 200000, etc.)
+- Pandera schema validation deferred to later plan - will run after enrichment stage
+- 6 models lack intelligence_index scores - intelligence-specific analysis should filter to n=182
 - Quality report script (05_quality_report.py) generates timestamped markdown reports
 - Outlier detection uses Isolation Forest with 5% contamination parameter
 
@@ -94,7 +93,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-18 23:00-23:04 UTC (4 minutes)
-Stopped at: Completed plan 01-03a (Data cleaning utilities)
+Last session: 2026-01-18 23:00-23:05 UTC (5 minutes)
+Stopped at: Completed plan 01-03b (Execute data cleaning pipeline)
 Resume file: None
-Next: Plan 01-03b (Execute data cleaning pipeline and create checkpoint)
+Next: Plan 01-04 (Distribution analysis and statistics)
