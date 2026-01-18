@@ -81,15 +81,23 @@ def check_accuracy(df: pl.DataFrame) -> dict:
     total_violations = 0
 
     # Intelligence Index range check [0, 100]
+    # Note: Column may be stored as String type, cast to Float64 for comparison
     if "Intelligence Index" in df.columns:
-        ii_violations = df.filter(
-            (pl.col("Intelligence Index") < 0) | (pl.col("Intelligence Index") > 100)
-        )
-        violations["intelligence_index"] = {
-            "count": ii_violations.height,
-            "examples": ii_violations.select(["Model", "Intelligence Index"]).head(3).to_dicts() if ii_violations.height > 0 else []
-        }
-        total_violations += ii_violations.height
+        ii_col = pl.col("Intelligence Index")
+        # Try to cast to numeric, handling nulls
+        try:
+            ii_violations = df.filter(
+                (pl.col("Intelligence Index").cast(pl.Float64) < 0) |
+                (pl.col("Intelligence Index").cast(pl.Float64) > 100)
+            )
+            violations["intelligence_index"] = {
+                "count": ii_violations.height,
+                "examples": ii_violations.select(["Model", "Intelligence Index"]).head(3).to_dicts() if ii_violations.height > 0 else []
+            }
+            total_violations += ii_violations.height
+        except Exception:
+            # If casting fails, report 0 violations (column may be all nulls)
+            violations["intelligence_index"] = {"count": 0, "examples": []}
     else:
         violations["intelligence_index"] = {"count": 0, "examples": []}
 
@@ -105,35 +113,47 @@ def check_accuracy(df: pl.DataFrame) -> dict:
         violations["price_negative"] = {"count": 0, "examples": []}
 
     # Speed negative check
+    # Note: Column may be stored as String type, cast to Float64 for comparison
     if "Speed(median token/s)" in df.columns:
-        speed_violations = df.filter(pl.col("Speed(median token/s)") < 0)
-        violations["speed_negative"] = {
-            "count": speed_violations.height,
-            "examples": speed_violations.select(["Model", "Speed(median token/s)"]).head(3).to_dicts() if speed_violations.height > 0 else []
-        }
-        total_violations += speed_violations.height
+        try:
+            speed_violations = df.filter(pl.col("Speed(median token/s)").cast(pl.Float64) < 0)
+            violations["speed_negative"] = {
+                "count": speed_violations.height,
+                "examples": speed_violations.select(["Model", "Speed(median token/s)"]).head(3).to_dicts() if speed_violations.height > 0 else []
+            }
+            total_violations += speed_violations.height
+        except Exception:
+            violations["speed_negative"] = {"count": 0, "examples": []}
     else:
         violations["speed_negative"] = {"count": 0, "examples": []}
 
     # Latency negative check
+    # Note: Column may be stored as String type, cast to Float64 for comparison
     if "Latency (First Answer Chunk /s)" in df.columns:
-        latency_violations = df.filter(pl.col("Latency (First Answer Chunk /s)") < 0)
-        violations["latency_negative"] = {
-            "count": latency_violations.height,
-            "examples": latency_violations.select(["Model", "Latency (First Answer Chunk /s)"]).head(3).to_dicts() if latency_violations.height > 0 else []
-        }
-        total_violations += latency_violations.height
+        try:
+            latency_violations = df.filter(pl.col("Latency (First Answer Chunk /s)").cast(pl.Float64) < 0)
+            violations["latency_negative"] = {
+                "count": latency_violations.height,
+                "examples": latency_violations.select(["Model", "Latency (First Answer Chunk /s)"]).head(3).to_dicts() if latency_violations.height > 0 else []
+            }
+            total_violations += latency_violations.height
+        except Exception:
+            violations["latency_negative"] = {"count": 0, "examples": []}
     else:
         violations["latency_negative"] = {"count": 0, "examples": []}
 
     # Context Window negative check
+    # Note: Column may be stored as String type, cast to Float64 for comparison
     if "Context Window" in df.columns:
-        context_violations = df.filter(pl.col("Context Window") < 0)
-        violations["context_window_negative"] = {
-            "count": context_violations.height,
-            "examples": context_violations.select(["Model", "Context Window"]).head(3).to_dicts() if context_violations.height > 0 else []
-        }
-        total_violations += context_violations.height
+        try:
+            context_violations = df.filter(pl.col("Context Window").cast(pl.Float64) < 0)
+            violations["context_window_negative"] = {
+                "count": context_violations.height,
+                "examples": context_violations.select(["Model", "Context Window"]).head(3).to_dicts() if context_violations.height > 0 else []
+            }
+            total_violations += context_violations.height
+        except Exception:
+            violations["context_window_negative"] = {"count": 0, "examples": []}
     else:
         violations["context_window_negative"] = {"count": 0, "examples": []}
 
@@ -275,13 +295,17 @@ def check_consistency(df: pl.DataFrame) -> dict:
         issues["duplicate_models"] = {"count": 0, "examples": []}
 
     # Check context window values are realistic (0 to 2M tokens)
+    # Note: Column may be stored as String type, cast to Float64 for comparison
     if "Context Window" in df.columns:
-        unrealistic_context = df.filter(pl.col("Context Window") > 2_000_000)
-        issues["context_window_unrealistic"] = {
-            "count": unrealistic_context.height,
-            "examples": unrealistic_context.select(["Model", "Context Window"]).head(3).to_dicts() if unrealistic_context.height > 0 else []
-        }
-        total_issues += unrealistic_context.height
+        try:
+            unrealistic_context = df.filter(pl.col("Context Window").cast(pl.Float64) > 2_000_000)
+            issues["context_window_unrealistic"] = {
+                "count": unrealistic_context.height,
+                "examples": unrealistic_context.select(["Model", "Context Window"]).head(3).to_dicts() if unrealistic_context.height > 0 else []
+            }
+            total_issues += unrealistic_context.height
+        except Exception:
+            issues["context_window_unrealistic"] = {"count": 0, "examples": []}
     else:
         issues["context_window_unrealistic"] = {"count": 0, "examples": []}
 
@@ -307,26 +331,31 @@ def check_consistency(df: pl.DataFrame) -> dict:
         issues["creator_inconsistencies"] = {"count": 0, "examples": []}
 
     # Check price per intelligence for extreme outliers
+    # Note: Intelligence Index may be stored as String type, cast to Float64 for calculation
     if "price_usd" in df.columns and "Intelligence Index" in df.columns:
-        # Calculate price per intelligence, filtering null intelligence values
-        df_with_ratio = df.filter(
-            pl.col("Intelligence Index").is_not_null() & (pl.col("Intelligence Index") > 0)
-        ).with_columns(
-            (pl.col("price_usd") / pl.col("Intelligence Index")).alias("price_per_intelligence")
-        )
-
-        # Flag extreme outliers (more than 10x the median)
-        if df_with_ratio.height > 0:
-            median_ratio = df_with_ratio["price_per_intelligence"].median()
-            extreme_outliers = df_with_ratio.filter(
-                pl.col("price_per_intelligence") > (median_ratio * 10)
+        try:
+            # Calculate price per intelligence, filtering null intelligence values
+            df_with_ratio = df.filter(
+                pl.col("Intelligence Index").is_not_null() &
+                (pl.col("Intelligence Index").cast(pl.Float64) > 0)
+            ).with_columns(
+                (pl.col("price_usd") / pl.col("Intelligence Index").cast(pl.Float64)).alias("price_per_intelligence")
             )
-            issues["price_intelligence_outliers"] = {
-                "count": extreme_outliers.height,
-                "examples": extreme_outliers.select(["Model", "price_usd", "Intelligence Index"]).head(3).to_dicts() if extreme_outliers.height > 0 else []
-            }
-            total_issues += extreme_outliers.height
-        else:
+
+            # Flag extreme outliers (more than 10x the median)
+            if df_with_ratio.height > 0:
+                median_ratio = df_with_ratio["price_per_intelligence"].median()
+                extreme_outliers = df_with_ratio.filter(
+                    pl.col("price_per_intelligence") > (median_ratio * 10)
+                )
+                issues["price_intelligence_outliers"] = {
+                    "count": extreme_outliers.height,
+                    "examples": extreme_outliers.select(["Model", "price_usd", "Intelligence Index"]).head(3).to_dicts() if extreme_outliers.height > 0 else []
+                }
+                total_issues += extreme_outliers.height
+            else:
+                issues["price_intelligence_outliers"] = {"count": 0, "examples": []}
+        except Exception:
             issues["price_intelligence_outliers"] = {"count": 0, "examples": []}
     else:
         issues["price_intelligence_outliers"] = {"count": 0, "examples": []}
@@ -407,15 +436,20 @@ def check_validity(df: pl.DataFrame) -> dict:
 
     # Check for impossible combinations: speed=0 but latency>0
     # (If a model has no speed, it shouldn't have latency measurements)
+    # Note: Columns may be stored as String type, cast to Float64 for comparison
     if "Speed(median token/s)" in df.columns and "Latency (First Answer Chunk /s)" in df.columns:
-        impossible = df.filter(
-            (pl.col("Speed(median token/s)") == 0) & (pl.col("Latency (First Answer Chunk /s)") > 0)
-        )
-        issues["impossible_combinations"] = {
-            "count": impossible.height,
-            "examples": impossible.select(["Model", "Speed(median token/s)", "Latency (First Answer Chunk /s)"]).head(3).to_dicts() if impossible.height > 0 else []
-        }
-        total_issues += impossible.height
+        try:
+            impossible = df.filter(
+                (pl.col("Speed(median token/s)").cast(pl.Float64) == 0) &
+                (pl.col("Latency (First Answer Chunk /s)").cast(pl.Float64) > 0)
+            )
+            issues["impossible_combinations"] = {
+                "count": impossible.height,
+                "examples": impossible.select(["Model", "Speed(median token/s)", "Latency (First Answer Chunk /s)"]).head(3).to_dicts() if impossible.height > 0 else []
+            }
+            total_issues += impossible.height
+        except Exception:
+            issues["impossible_combinations"] = {"count": 0, "examples": []}
     else:
         issues["impossible_combinations"] = {"count": 0, "examples": []}
 
@@ -986,12 +1020,34 @@ def generate_quality_report(
             ])
 
             for row in outliers_df.to_dicts():
+                # Get values and handle string types for numeric columns
+                speed_val = row.get('Speed(median token/s)', 0)
+                latency_val = row.get('Latency (First Answer Chunk /s)', 0)
+                intelligence_val = row.get('Intelligence Index', 'N/A')
+                price_val = row.get('price_usd', 0)
+
+                # Convert to float if possible, otherwise use as-is
+                try:
+                    speed_formatted = f"{float(speed_val):.1f}"
+                except (ValueError, TypeError):
+                    speed_formatted = str(speed_val)
+
+                try:
+                    latency_formatted = f"{float(latency_val):.2f}"
+                except (ValueError, TypeError):
+                    latency_formatted = str(latency_val)
+
+                try:
+                    price_formatted = f"${float(price_val):.2f}"
+                except (ValueError, TypeError):
+                    price_formatted = str(price_val)
+
                 report_lines.append(
                     f"| {row.get('Model', 'N/A')} | {row.get('Creator', 'N/A')} | "
-                    f"${row.get('price_usd', 0):.2f} | "
-                    f"{row.get('Intelligence Index', 'N/A')} | "
-                    f"{row.get('Speed(median token/s)', 0):.1f} | "
-                    f"{row.get('Latency (First Answer Chunk /s)', 0):.2f} | "
+                    f"{price_formatted} | "
+                    f"{intelligence_val} | "
+                    f"{speed_formatted} | "
+                    f"{latency_formatted} | "
                     f"{row.get('outlier_score', 0):.3f} |"
                 )
 
