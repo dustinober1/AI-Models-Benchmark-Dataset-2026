@@ -10,31 +10,31 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 ## Current Position
 
 Phase: 1 of 4 (Data Pipeline & Quality Assessment)
-Plan: 04 of 06 (Distribution analysis and outlier detection)
-Status: In progress - Plan 01-04 completed
-Last activity: 2026-01-18 — Completed plan 01-04: Distribution analysis and outlier detection with Isolation Forest
+Plan: 05 of 06 (Merge and validate enriched dataset)
+Status: In progress - Plan 01-05b completed
+Last activity: 2026-01-18 — Completed plan 01-05b: Data enrichment with derived metrics and coverage analysis
 
-Progress: [████░░░░] 67% (4 of 6 plans complete)
+Progress: [█████░░░] 83% (5 of 6 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 4.75 minutes
-- Total execution time: 0.32 hours
+- Total plans completed: 5
+- Average duration: 4.8 minutes
+- Total execution time: 0.4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 (Data Pipeline) | 4 | 6 | 4.75 min |
+| 1 (Data Pipeline) | 5 | 6 | 4.8 min |
 | 2 (Statistical Analysis) | 0 | ? | - |
 | 3 (Visualizations) | 0 | ? | - |
 | 4 (Narrative) | 0 | ? | - |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (3 min), 01-03b (5 min), 01-04 (3 min)
-- Trend: Consistent velocity ~4.75 min/plan
+- Last 5 plans: 01-01 (8 min), 01-02 (3 min), 01-03b (5 min), 01-04 (3 min), 01-05b (5 min)
+- Trend: Consistent velocity ~4.8 min/plan
 
 *Updated after each plan completion*
 
@@ -93,6 +93,16 @@ Recent decisions affecting current work:
 - HTML selectors require adjustment: HuggingFace scraping returned empty (actual page structure inspection needed)
 - Provider announcements partial success: 6 announcements retrieved, but model extraction needs refinement
 
+**From Plan 01-05b (Merge and Validate Enriched Dataset):**
+- Data enrichment utilities: enrich_with_external_data() (left join), add_derived_columns() (5 metrics), calculate_enrichment_coverage() (statistics)
+- Derived metrics created: price_per_intelligence_point, speed_intelligence_ratio, model_tier, log_context_window, price_per_1k_tokens
+- Enrichment coverage: 96.81% for intelligence-based metrics (6 models lack IQ scores), 100% for transformation-based metrics
+- External data coverage: 0% (web scraping failed - all model names null in scraped data)
+- Model tier classification: Regex-based extraction from names (67.6% unknown, 12.8% high, 10.6% mini, 4.3% low, 3.7% medium, 1.1% xhigh)
+- Final enriched dataset: 188 models, 16 columns saved to data/processed/ai_models_enriched.parquet
+- Graceful degradation: Pipeline proceeds with base dataset when external data unavailable
+- Speed column type: Stored as String type in cleaned data, auto-cast to Float64 during enrichment (Rule 3 fix)
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
@@ -124,11 +134,17 @@ None yet.
 - Provider announcement scraping has null model column values - will need fuzzy matching or manual mapping
 - External data coverage limited (6 announcements, 0 models) - may need manual entry for top 20 models
 
+**From Plan 01-05b:**
+- External data enrichment failed (0% coverage) - temporal analysis not possible without manual data entry
+- Model tier classification: 67.6% unknown tier limits tier-based analysis power
+- Speed/Latency columns stored as String type in cleaned data - requires casting during analysis (auto-fixed in enrichment)
+- 6 models lack intelligence_index scores - intelligence-specific analyses must filter to n=182
+
 **No blockers identified.**
 
 ## Session Continuity
 
-Last session: 2026-01-18 23:08-23:12 UTC (4 minutes)
-Stopped at: Completed plan 01-04 (Distribution analysis and outlier detection)
+Last session: 2026-01-18 23:14-23:19 UTC (5 minutes)
+Stopped at: Completed plan 01-05b (Merge and validate enriched dataset)
 Resume file: None
-Next: Plan 01-05a (Web scraping utilities for external data) or 01-05b (Merge and validate enriched dataset)
+Next: Plan 01-06 (Final validation and quality report)
