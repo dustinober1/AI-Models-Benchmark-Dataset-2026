@@ -18,17 +18,17 @@
 
 ### Statistical Analysis
 
-- [ ] **STAT-01**: Compute correlation matrix (Intelligence vs Price vs Speed vs Latency vs Context Window)
-- [ ] **STAT-02**: Perform price-performance frontier analysis (Pareto-efficient models identification)
-- [ ] **STAT-03**: Analyze speed-intelligence tradeoffs across model tiers
-- [ ] **STAT-04**: Compare providers by region (US vs China vs Europe) on key metrics
-- [ ] **STAT-05**: Analyze context window distribution by intelligence tier
-- [ ] **STAT-06**: Perform provider-level segmentation and clustering analysis
-- [ ] **STAT-07**: Apply bootstrap resampling for confidence interval estimation
-- [ ] **STAT-08**: Implement multiple testing correction (FDR/Bonferroni) for statistical significance
-- [ ] **STAT-09**: Quantify uncertainty on all statistical estimates
-- [ ] **STAT-10**: Build simple predictive models (linear regression, trend extrapolation) for 2027 trends
-- [ ] **STAT-11**: Report null findings alongside significant results
+- [x] **STAT-01**: Compute correlation matrix (Intelligence vs Price vs Speed vs Latency vs Context Window)
+- [x] **STAT-02**: Perform price-performance frontier analysis (Pareto-efficient models identification)
+- [x] **STAT-03**: Analyze speed-intelligence tradeoffs across model tiers
+- [x] **STAT-04**: Compare providers by region (US vs China vs Europe) on key metrics
+- [x] **STAT-05**: Analyze context window distribution by intelligence tier
+- [x] **STAT-06**: Perform provider-level segmentation and clustering analysis
+- [x] **STAT-07**: Apply bootstrap resampling for confidence interval estimation
+- [x] **STAT-08**: Implement multiple testing correction (FDR/Bonferroni) for statistical significance
+- [x] **STAT-09**: Quantify uncertainty on all statistical estimates
+- [x] **STAT-10**: Build simple predictive models (linear regression, trend extrapolation) for 2027 trends
+- [x] **STAT-11**: Report null findings alongside significant results
 
 ### Visualizations
 
@@ -52,9 +52,9 @@
 - [ ] **NARR-04**: Add "so what?" explanations for each finding
 - [ ] **NARR-05**: Integrate external context (model release timeline, market events, provider news)
 - [x] **NARR-06**: Document code comments explaining all analysis choices
-- [ ] **NARR-07**: Provide methodology explanation for statistical approaches
+- [x] **NARR-07**: Provide methodology explanation for statistical approaches
 - [ ] **NARR-08**: Include precise language avoiding correlation-causation fallacies
-- [ ] **NARR-09**: Add uncertainty discussion for all predictions
+- [x] **NARR-09**: Add uncertainty discussion for all predictions
 - [ ] **NARR-10**: Create comprehensive README for project reproducibility
 
 ### Architecture
@@ -104,17 +104,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-06 | Phase 1 | Complete |
 | DATA-07 | Phase 1 | Complete |
 | DATA-08 | Phase 1 | Complete |
-| STAT-01 | Phase 2 | Pending |
-| STAT-02 | Phase 2 | Pending |
-| STAT-03 | Phase 2 | Pending |
-| STAT-04 | Phase 2 | Pending |
-| STAT-05 | Phase 2 | Pending |
-| STAT-06 | Phase 2 | Pending |
-| STAT-07 | Phase 2 | Pending |
-| STAT-08 | Phase 2 | Pending |
-| STAT-09 | Phase 2 | Pending |
-| STAT-10 | Phase 2 | Pending |
-| STAT-11 | Phase 2 | Pending |
+| STAT-01 | Phase 2 | Complete |
+| STAT-02 | Phase 2 | Complete |
+| STAT-03 | Phase 2 | Complete |
+| STAT-04 | Phase 2 | Complete |
+| STAT-05 | Phase 2 | Complete |
+| STAT-06 | Phase 2 | Complete |
+| STAT-07 | Phase 2 | Complete |
+| STAT-08 | Phase 2 | Complete |
+| STAT-09 | Phase 2 | Complete |
+| STAT-10 | Phase 2 | Complete |
+| STAT-11 | Phase 2 | Complete |
 | VIZ-01 | Phase 3 | Pending |
 | VIZ-02 | Phase 3 | Pending |
 | VIZ-03 | Phase 3 | Pending |
@@ -132,9 +132,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NARR-04 | Phase 4 | Pending |
 | NARR-05 | Phase 4 | Pending |
 | NARR-06 | Phase 1 | Complete |
-| NARR-07 | Phase 2 | Pending |
+| NARR-07 | Phase 2 | Complete |
 | NARR-08 | Phase 4 | Pending |
-| NARR-09 | Phase 2 | Pending |
+| NARR-09 | Phase 2 | Complete |
 | NARR-10 | Phase 4 | Pending |
 | ARCH-01 | Phase 1 | Complete |
 | ARCH-02 | Phase 1 | Complete |
@@ -147,7 +147,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 **Coverage:**
 - v1 requirements: 51 total
 - Phase 1 complete: 15/51 (29%)
-- Phase 2 pending: 11/51 (22%)
+- Phase 2 complete: 13/51 (26%)
 - Phase 3 pending: 11/51 (22%)
 - Phase 4 pending: 9/51 (18%)
 - Mapped to phases: 51
@@ -155,4 +155,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2025-01-18*
-*Last updated: 2026-01-18 after Phase 1 completion*
+*Last updated: 2026-01-19 after Phase 2 completion*
