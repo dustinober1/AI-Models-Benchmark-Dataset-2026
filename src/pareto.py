@@ -161,12 +161,6 @@ def compute_pareto_frontier(
         pl.Series("pareto_rank", [None] * len(df), dtype=pl.Int32)
     )
 
-    # Update rows that have Pareto analysis
-    for i, row in enumerate(df_result.iter_rows(named=True)):
-        original_idx = df_result.row(i, named=True)["__original_index__"] if "__original_index__" in df_result.columns else i
-        # This is a simplified merge - in practice, we'd need to match by row index
-        pass
-
     # For simplicity, return the analyzed DataFrame with nulls dropped
     # Users can merge back if needed
     return df_result
