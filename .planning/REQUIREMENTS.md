@@ -46,16 +46,16 @@
 
 ### Narrative & Documentation
 
-- [ ] **NARR-01**: Write executive summary leading with key insights (insight-first structure)
-- [ ] **NARR-02**: Maintain 2:1 markdown-to-code ratio throughout notebook
-- [ ] **NARR-03**: Structure narrative as story: hook → exploration → discovery → conclusion
-- [ ] **NARR-04**: Add "so what?" explanations for each finding
-- [ ] **NARR-05**: Integrate external context (model release timeline, market events, provider news)
+- [x] **NARR-01**: Write executive summary leading with key insights (insight-first structure)
+- [x] **NARR-02**: Maintain 2:1 markdown-to-code ratio throughout notebook
+- [x] **NARR-03**: Structure narrative as story: hook → exploration → discovery → conclusion
+- [x] **NARR-04**: Add "so what?" explanations for each finding
+- [x] **NARR-05**: Integrate external context (model release timeline, market events, provider news)
 - [x] **NARR-06**: Document code comments explaining all analysis choices
 - [x] **NARR-07**: Provide methodology explanation for statistical approaches
-- [ ] **NARR-08**: Include precise language avoiding correlation-causation fallacies
+- [x] **NARR-08**: Include precise language avoiding correlation-causation fallacies
 - [x] **NARR-09**: Add uncertainty discussion for all predictions
-- [ ] **NARR-10**: Create comprehensive README for project reproducibility
+- [x] **NARR-10**: Create comprehensive README for project reproducibility
 
 ### Architecture
 
@@ -64,7 +64,7 @@
 - [x] **ARCH-03**: Create data/ directory with raw/, interim/, processed/ subdirectories
 - [x] **ARCH-04**: Build src/ directory for shared utilities and helper functions
 - [x] **ARCH-05**: Implement Polars LazyFrame pipelines with checkpointing
-- [ ] **ARCH-06**: Create final narrative notebook that imports from scripts (not duplicate logic)
+- [x] **ARCH-06**: Create final narrative notebook that imports from scripts (not duplicate logic)
 - [x] **ARCH-07**: Add requirements.txt with pinned versions for reproducibility
 
 ## v2 Requirements
@@ -126,22 +126,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIZ-09 | Phase 3 | Complete |
 | VIZ-10 | Phase 3 | Complete |
 | VIZ-11 | Phase 3 | Complete |
-| NARR-01 | Phase 4 | Pending |
-| NARR-02 | Phase 4 | Pending |
-| NARR-03 | Phase 4 | Pending |
-| NARR-04 | Phase 4 | Pending |
-| NARR-05 | Phase 4 | Pending |
+| NARR-01 | Phase 4 | Complete |
+| NARR-02 | Phase 4 | Complete |
+| NARR-03 | Phase 4 | Complete |
+| NARR-04 | Phase 4 | Complete |
+| NARR-05 | Phase 4 | Complete |
 | NARR-06 | Phase 1 | Complete |
 | NARR-07 | Phase 2 | Complete |
-| NARR-08 | Phase 4 | Pending |
+| NARR-08 | Phase 4 | Complete |
 | NARR-09 | Phase 2 | Complete |
-| NARR-10 | Phase 4 | Pending |
+| NARR-10 | Phase 4 | Complete |
 | ARCH-01 | Phase 1 | Complete |
 | ARCH-02 | Phase 1 | Complete |
 | ARCH-03 | Phase 1 | Complete |
 | ARCH-04 | Phase 1 | Complete |
 | ARCH-05 | Phase 1 | Complete |
-| ARCH-06 | Phase 4 | Pending |
+| ARCH-06 | Phase 4 | Complete |
 | ARCH-07 | Phase 1 | Complete |
 
 **Coverage:**
@@ -149,10 +149,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Phase 1 complete: 15/51 (29%)
 - Phase 2 complete: 13/51 (26%)
 - Phase 3 complete: 11/51 (22%)
-- Phase 4 pending: 9/51 (18%)
+- Phase 4 complete: 9/51 (18%)
 - Mapped to phases: 51
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2025-01-18*
-*Last updated: 2026-01-19 after Phase 3 completion*
+*Last updated: 2026-01-19 after Phase 4 completion*
