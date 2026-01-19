@@ -10,10 +10,10 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 ## Current Position
 
 Phase: 2 of 4 (Statistical Analysis & Domain Insights) — In Progress
-Status: Plan 02-02 complete — Spearman correlation analysis with FDR correction, STAT-05 context window tier analysis
-Last activity: 2026-01-19 — Plan 02-02 complete: 2 tasks, 5 minutes, all 10 correlations significant
+Status: Plan 02-03 complete — Pareto frontier analysis identified 8 price-performance, 6 speed-intelligence, and 41 multi-objective efficient models
+Last activity: 2026-01-19 — Plan 02-03 complete: 2 tasks, 7 minutes, GPT-5.2 dominates all frontiers
 
-Progress: [████████████] 22% (2 of 9 plans complete)
+Progress: [██████████░] 33% (3 of 9 plans complete)
 
 ## Verification Status
 
@@ -32,22 +32,22 @@ Phase 1 verified: **passed** (43/43 must-haves)
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 4.0 minutes
-- Total execution time: 0.7 hours (40 minutes)
+- Total plans completed: 11
+- Average duration: 4.1 minutes
+- Total execution time: 0.8 hours (45 minutes)
 
 **By Phase:**
 
 | Phase | Plans | Complete | Avg/Plan |
 |-------|-------|----------|----------|
 | 1 (Data Pipeline) | 8 | 8 | 3.9 min |
-| 2 (Statistical Analysis) | 2 | 10 | 4.5 min |
+| 2 (Statistical Analysis) | 3 | 11 | 5.3 min |
 | 3 (Visualizations) | 0 | ? | - |
 | 4 (Narrative) | 0 | ? | - |
 
 **Recent Trend:**
-- Last 10 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min), 02-02 (5 min)
-- Trend: Consistent velocity ~4.0 min/plan
+- Last 11 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min), 02-02 (5 min), 02-03 (7 min)
+- Trend: Consistent velocity ~4.1 min/plan
 
 *Updated after each plan completion*
 
@@ -153,6 +153,20 @@ Recent decisions affecting current work:
 - Matplotlib box plots: Direct numpy array extraction avoids pyarrow dependency
 - Narrative report: Methodology, significant findings (all 10), null findings (none per STAT-11), interpretations (NARR-07)
 
+**From Plan 02-03 (Pareto Frontier Analysis):**
+- Pareto frontier utilities: compute_pareto_frontier(), get_pareto_efficient_models(), compute_hypervolume(), plot_pareto_frontier()
+- Multi-objective dominance algorithm: j dominates i if all_objectives[j] >= all_objectives[i] AND any(all_objectives[j] > all_objectives[i])
+- String-to-numeric casting: Speed, Latency stored as String - automatic Float64 casting in compute_pareto_frontier()
+- Three frontier analyses completed:
+  - Intelligence vs Price: 8 efficient models (4.4%) - GPT-5.2 leads with IQ=51, Price=$4.81
+  - Speed vs Intelligence: 6 efficient models (3.3%) - GPT-5.2, Gemini 3 Pro Preview, Gemini 3 Flash dominate
+  - Multi-objective: 41 efficient models (22.7%) - Balancing intelligence, speed, price, latency
+- Market leaders: GPT-5.2 dominates all frontiers (IQ=51), Gemini 3 Flash offers exceptional value (IQ=46, Price=$1.13)
+- Flag merging strategy: Left-join on model_id (not row index) for reliable Pareto flag alignment
+- Dataset with Pareto flags: data/processed/pareto_frontier.parquet (187 models, 21 columns)
+- Frontier visualizations: Annotated scatter plots highlighting efficient models in red
+- Value propositions identified: Budget options (GLM-4.7: IQ=42, Price=$0.94), premium models (GPT-5.2: IQ=51, Price=$4.81)
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
@@ -212,14 +226,23 @@ None yet.
 - Use intelligence_index (Int64) column, not "Intelligence Index" (String with placeholders)
 - Matplotlib direct numpy extraction avoids pyarrow dependency
 
+**From Plan 02-03:**
+- Speed, Latency columns stored as String - automatic Float64 casting required in Pareto functions
+- Flag merging: Left-join on model_id (not row index) to avoid pyarrow dependency
+- Frontier density: Smaller frontier = clearer leaders (8 price-performance), larger = more tradeoffs (41 multi-objective)
+- Pareto flags available for filtering: is_pareto_intelligence_price, is_pareto_speed_intelligence, is_pareto_multi_objective
+- String column formatting: Use try/except blocks for safe numeric conversion in reports
+
 **Phase 1 Status:** COMPLETE — Verified 43/43 must-haves, 75% quality score
 
 **Phase 2 Readiness:**
-- Dataset: data/processed/ai_models_deduped.parquet (187 models, 181 with valid intelligence)
-- Unique model_id column for accurate group-by operations
-- Correlation matrix with FDR correction available for Pareto frontier and provider clustering
+- Dataset: data/processed/pareto_frontier.parquet (187 models, 181 with valid intelligence, 21 columns)
+- Pareto flags available for filtering and group comparisons
+- Correlation matrix with FDR correction available for provider clustering
 - STAT-05 complete: Context window by intelligence tier analysis available
 - Non-parametric approach validated: Spearman correlation appropriate for skewed distributions
+- Market leaders identified: GPT-5.2 dominates all frontiers, Gemini 3 Flash exceptional value
+- Value propositions: Budget (GLM-4.7), premium (GPT-5.2), balanced (Gemini 3 Flash)
 - Known issues: Non-normal distributions, 6 models lack intelligence_index, context window extreme skewness (9.63)
 - Statistical approach: Non-parametric methods required (Spearman, Mann-Whitney U, Kruskal-Wallis)
 - 10 outliers flagged (5.32%) - assess impact on correlations
@@ -227,7 +250,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-19 (Plan 02-02 execution)
-Stopped at: Completed Plan 02-02 (Correlation Analysis)
+Last session: 2026-01-19 (Plan 02-03 execution)
+Stopped at: Completed Plan 02-03 (Pareto Frontier Analysis)
 Resume file: None
-Next: Plan 02-03 (Pareto Frontier)
+Next: Plan 02-04 (Statistical Tests) or Plan 02-05 (Provider Clustering)
