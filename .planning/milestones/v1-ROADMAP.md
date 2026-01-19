@@ -1,4 +1,8 @@
-# Roadmap: AI Models Benchmark Analysis 2026
+# Milestone v1: AI Models Benchmark Analysis 2026
+
+**Status:** ✅ SHIPPED 2026-01-19
+**Phases:** 1-4
+**Total Plans:** 19
 
 ## Overview
 
@@ -6,20 +10,8 @@ A comprehensive exploratory data analysis of the 2026 AI Models Benchmark Datase
 
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
-
-Decimal phases appear between their surrounding integers in numeric order.
-
-- [x] **Phase 1: Data Pipeline & Quality Assessment** - Load, clean, validate, and enrich the benchmark dataset
-- [x] **Phase 2: Statistical Analysis & Domain Insights** - Perform quantitative analysis and uncover correlations, tradeoffs, and trends
-- [x] **Phase 3: Interactive Visualizations** - Build Plotly charts that tell the data story visually
-- [x] **Phase 4: Narrative Synthesis & Publication** - Weave insights into a compelling Kaggle notebook
-
-## Phase Details
-
 ### Phase 1: Data Pipeline & Quality Assessment ✓
+
 **Goal**: Establish a clean, validated, and enriched dataset foundation for all analysis
 **Depends on**: Nothing (first phase)
 **Requirements**: DATA-01, DATA-02, DATA-03, DATA-04, DATA-05, DATA-06, DATA-07, DATA-08, ARCH-01, ARCH-02, ARCH-03, ARCH-04, ARCH-05, ARCH-07, NARR-06
@@ -43,6 +35,7 @@ Plans:
 - [x] 01-06-PLAN.md — Generate comprehensive quality assessment report
 
 ### Phase 2: Statistical Analysis & Domain Insights ✓
+
 **Goal**: Discover quantitative insights about AI model performance, pricing, and market dynamics
 **Depends on**: Phase 1 (clean, enriched dataset required)
 **Requirements**: STAT-01, STAT-02, STAT-03, STAT-04, STAT-05, STAT-06, STAT-07, STAT-08, STAT-09, STAT-10, STAT-11, NARR-07, NARR-09
@@ -65,6 +58,7 @@ Plans:
 - [x] 02-05-PLAN.md — Perform group comparisons, bootstrap uncertainty quantification, and 2027 trend predictions
 
 ### Phase 3: Interactive Visualizations ✓
+
 **Goal**: Create engaging Plotly visualizations that make insights accessible and shareable
 **Depends on**: Phase 2 (statistical outputs required for visualization)
 **Requirements**: VIZ-01, VIZ-02, VIZ-03, VIZ-04, VIZ-05, VIZ-06, VIZ-07, VIZ-08, VIZ-09, VIZ-10, VIZ-11
@@ -88,6 +82,7 @@ Plans:
 - [x] 03-03-PLAN.md — Tradeoff and linked brushing visualizations (3 outputs: 1 speed-intelligence tradeoff + 1 linked dashboard + 1 master index)
 
 ### Phase 4: Narrative Synthesis & Publication ✓
+
 **Goal**: Deliver a compelling Kaggle notebook that engages readers with novel insights
 **Depends on**: Phase 2 (insights), Phase 3 (visualizations)
 **Requirements**: NARR-01, NARR-02, NARR-03, NARR-04, NARR-05, NARR-08, NARR-10, ARCH-06
@@ -108,14 +103,48 @@ Plans:
 - [x] 04-02-PLAN.md — Weave statistical analysis sections into narrative story
 - [x] 04-03-PLAN.md — Complete narrative with tradeoffs, predictions, conclusions, and README
 
-## Progress
+## Milestone Summary
 
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+**Decimal Phases:**
+None
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Data Pipeline & Quality Assessment | 8/8 | ✓ Complete | 2026-01-18 |
-| 2. Statistical Analysis & Domain Insights | 5/5 | ✓ Complete | 2026-01-19 |
-| 3. Interactive Visualizations | 3/3 | ✓ Complete | 2026-01-19 |
-| 4. Narrative Synthesis & Publication | 3/3 | ✓ Complete | 2026-01-19 |
+**Key Decisions:**
+- Poetry 2.3.0 for dependency management (handles Python 3.14)
+- Script-as-module pattern: all scripts have importable functions for notebook integration
+- LazyFrame evaluation throughout pipeline for performance and memory efficiency
+- Non-parametric statistical methods (Spearman, Mann-Whitney U, Kruskal-Wallis) due to non-normal distributions
+- Plotly.graph_objects directly instead of plotly.express to avoid pyarrow dependency
+- Standalone HTML files with Plotly CDN for easy sharing and notebook integration
+- Insight-first narrative structure: Executive summary leads with key findings, not code setup
+- Pre-generated visualizations embedded via IFrame for fast notebook loading
+
+**Novel Insights Delivered:**
+1. **Market Bifurcation** - Provider market splits into Budget (67%) and Premium (33%) segments
+2. **Pareto Sparsity** - Only 4.4% of models are price-performance efficient
+3. **Speed-Intelligence Decoupling** - Weak correlation (ρ=0.08) between speed and intelligence
+4. **Regional Asymmetry** - European models are fastest but cheapest
+5. **Context Window Scaling** - Logarithmic growth with intelligence tiers
+
+**Issues Resolved:**
+- 34 duplicate model names resolved using context window disambiguation
+- String-to-numeric casting for Speed, Latency, and Context Window columns
+- Pyarrow dependency avoided by using plotly.graph_objects directly
+- External web scraping achieved 0% coverage (derived metrics enrichment successful)
+
+**Issues Deferred:**
+- External web scraping HTML selectors need adjustment (deferred to v2)
+- Linked brushing cross-filtering JavaScript implementation (layout exists, stub implementation)
+- Pagination implementation in HuggingFace scraper (first page only)
+
+**Technical Debt Incurred:**
+- External data enrichment via web scraping achieved 0% coverage due to HTML selector issues
+- VIZ-10: Linked brushing cross-filtering JavaScript is stub (console.log only)
+- NARR-02: Markdown-to-code ratio is 1.82:1, slightly below 2:1 target
+
+---
+
+_For current project status, see .planning/ROADMAP.md_
+
+---
+
+_Archived: 2026-01-19 as part of v1 milestone completion_

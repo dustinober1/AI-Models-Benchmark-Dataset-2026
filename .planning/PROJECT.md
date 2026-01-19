@@ -12,20 +12,17 @@ A comprehensive exploratory data analysis of the 2026 AI Models Benchmark Datase
 
 ### Validated
 
-(None yet - ship to validate)
+- ✓ Data pipeline: Load, clean, validate, and enrich benchmark dataset using Polars — v1.0
+- ✓ Statistical analysis: Price-performance correlations, speed-intelligence tradeoffs, provider comparisons, Pareto frontiers — v1.0
+- ✓ Interactive visualizations: 21 Plotly charts (histograms, box plots, heatmaps, Pareto frontiers, tradeoff zones) — v1.0
+- ✓ Narrative synthesis: Kaggle notebook with executive summary, statistical analysis, predictions, and README — v1.0
+- ✓ Architecture: Numbered scripts, script-as-module pattern, LazyFrame pipelines, checkpointing — v1.0
+- ✓ Documentation: Comprehensive README, methodology explanations, precise language (correlation ≠ causation) — v1.0
+- ✓ Novel insights discovered: Market bifurcation, Pareto sparsity, speed-intelligence decoupling, regional asymmetry, context window scaling — v1.0
 
 ### Active
 
-- [ ] Clean and load the benchmark dataset (ai_models_performance.csv) using Polars
-- [ ] Perform price-performance analysis: cost vs intelligence correlations, value propositions, provider pricing strategies
-- [ ] Perform speed-intelligence analysis: tradeoffs between generation speed, latency, and model capability
-- [ ] Perform provider analysis: regional comparison (US/China/Europe providers), architectural patterns, market positioning
-- [ ] Enrich dataset with external data sources (model release dates, provider announcements, market events)
-- [ ] Build statistical prediction models: trend extrapolation, regression analysis, time series forecasting for 2027 trends
-- [ ] Create separate analysis scripts in `scripts/` directory, each focused on one analysis angle
-- [ ] Synthesize all findings into a narrative-driven Jupyter notebook suitable for Kaggle publication
-- [ ] Document novel insights discovered throughout the analysis
-- [ ] Ensure all analysis is reproducible with clear code documentation
+(None — v1 complete. Future milestones could add advanced ML predictions, real-time dashboards, or multi-language support.)
 
 ### Out of Scope
 
@@ -57,10 +54,14 @@ A comprehensive exploratory data analysis of the 2026 AI Models Benchmark Datase
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Modern stack (Polars/Plotly) | Faster than pandas, more interactive visualizations for Kaggle | — Pending |
-| Separate scripts vs single notebook | Modularity allows iterative exploration, easier to debug and extend | — Pending |
-| Statistical predictions | Interpretable insights, less risk of overfitting on limited data | — Pending |
-| External data enrichment | Context from model releases, provider news adds depth to predictions | — Pending |
+| Modern stack (Polars/Plotly) | Faster than pandas, more interactive visualizations for Kaggle | ✓ Good - 12,876 LOC of efficient Python |
+| Separate scripts vs single notebook | Modularity allows iterative exploration, easier to debug and extend | ✓ Good - 19 scripts, all importable as modules |
+| Statistical predictions | Interpretable insights, less risk of overfitting on limited data | ✓ Good - Bootstrap CIs, FDR correction, null findings reported |
+| External data enrichment | Context from model releases, provider news adds depth to predictions | ⚠️ Partial - Web scraping 0% coverage (HTML selectors), derived metrics 96-100% |
+| Non-parametric methods | Distributions are right-skewed, parametric tests inappropriate | ✓ Good - Spearman, Mann-Whitney U, Kruskal-Wallis throughout |
+| Plotly.graph_objects directly | Avoid pyarrow dependency, more control over figure layout | ✓ Good - 21 interactive HTML files, no pyarrow issues |
+| Script-as-module pattern | Notebook imports from src/, no duplicate logic | ✓ Good - Notebook loads pre-generated figures, imports analysis functions |
+| Insight-first narrative | Executive summary leads, story arc (hook → exploration → discovery → conclusion) | ✓ Good - 1.82:1 markdown-to-code ratio, engaging Kaggle notebook |
 
 ---
-*Last updated: 2025-01-18 after initialization*
+*Last updated: 2026-01-19 after v1.0 milestone*

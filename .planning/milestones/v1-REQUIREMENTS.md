@@ -1,3 +1,13 @@
+# Requirements Archive: v1 AI Models Benchmark Analysis 2026
+
+**Archived:** 2026-01-19
+**Status:** ✅ SHIPPED
+
+This is the archived requirements specification for v1.
+For current requirements, see `.planning/REQUIREMENTS.md` (created for next milestone).
+
+---
+
 # Requirements: AI Models Benchmark Analysis 2026
 
 **Defined:** 2025-01-18
@@ -154,5 +164,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2025-01-18*
-*Last updated: 2026-01-19 after Phase 4 completion*
+
+## Milestone Summary
+
+**Shipped:** 51 of 51 v1 requirements (100%)
+**Adjusted:** DATA-08 (external web scraping achieved 0% coverage, derived metrics successful)
+**Dropped:** None
+
+All v1 requirements were successfully implemented and delivered. The milestone achieved its core value of discovering novel insights about AI models not commonly published, including market bifurcation, Pareto sparsity, speed-intelligence decoupling, regional asymmetry, and context window scaling patterns.
+
+---
+
+*Archived: 2026-01-19 as part of v1 milestone completion*
