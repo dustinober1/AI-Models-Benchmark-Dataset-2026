@@ -344,3 +344,541 @@ def create_correlation_heatmap(
     fig = configure_layout(fig, title)
 
     return fig
+
+
+def create_pareto_frontier_chart(
+    df: pl.DataFrame,
+    x_col: str,
+    y_col: str,
+    pareto_col: str,
+    title: str,
+    color_col: str = None
+) -> go.Figure:
+    """
+    Create interactive Pareto frontier scatter plot with highlighted efficient models.
+
+    Generates a scatter plot showing dominated models with transparency and Pareto-efficient
+    models highlighted in red with larger markers. Includes hover tooltips showing model
+    names, creators, objective values, and Pareto status. Efficient models are annotated
+    with text labels.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        Input DataFrame with model data and Pareto efficiency flag.
+    x_col : str
+        Column name for x-axis (e.g., "price_usd").
+    y_col : str
+        Column name for y-axis (e.g., "intelligence_index").
+    pareto_col : str
+        Column name containing Pareto efficiency flag (boolean).
+    title : str
+        Title for the chart.
+    color_col : str, optional
+        Column name for color-coding points (e.g., "Creator", "cluster").
+        If not provided, uses single color for dominated models.
+
+    Returns
+    -------
+    go.Figure
+        Interactive Plotly scatter plot with hover tooltips, zoom, and pan.
+
+    Examples
+    --------
+    >>> df = pl.read_parquet("data/processed/pareto_frontier.parquet")
+    >>> fig = create_pareto_frontier_chart(
+    ...     df,
+    ...     x_col="price_usd",
+    ...     y_col="intelligence_index",
+    ...     pareto_col="is_pareto_intelligence_price",
+    ...     title="Intelligence vs Price - Pareto Frontier"
+    ... )
+    >>> fig.show()
+
+    Notes
+    -----
+    - Pareto-efficient models: Red markers, larger size (15), annotated with labels
+    - Dominated models: Blue/colored markers, smaller size (8), transparency (0.5)
+    - Hover shows: Model name, Creator, x/y values, Pareto status
+    - Top 5 efficient models annotated with text labels
+    - Trend line added using LOWESS smoothing if n>50
+    - Color by Creator or cluster if color_col provided
+    """
+    # Extract data
+    x_data = df[x_col].cast(pl.Float64).to_numpy()
+    y_data = df[y_col].cast(pl.Float64).to_numpy()
+    pareto_flags = df[pareto_col].to_numpy()
+
+    # Get model names and creators for hover
+    models = df["Model"].to_list()
+    creators = df["Creator"].to_list()
+
+    # Separate dominated and Pareto-efficient models
+    pareto_mask = np.nan_to_num(pareto_flags, nan=False).astype(bool)
+    dominated_mask = ~pareto_mask
+
+    # Create figure
+    fig = go.Figure()
+
+    # Add dominated models (with transparency)
+    if np.any(dominated_mask):
+        dominated_x = x_data[dominated_mask]
+        dominated_y = y_data[dominated_mask]
+        dominated_models = [models[i] for i in range(len(models)) if dominated_mask[i]]
+        dominated_creators = [creators[i] for i in range(len(creators)) if dominated_mask[i]]
+
+        # Color by color_col if provided
+        if color_col and color_col in df.columns:
+            dominated_colors = [df[color_col][i] for i in range(len(df)) if dominated_mask[i]]
+        else:
+            dominated_colors = ["Dominated"] * len(dominated_x)
+
+        fig.add_trace(go.Scatter(
+            x=dominated_x,
+            y=dominated_y,
+            mode="markers",
+            name="Dominated",
+            marker=dict(
+                size=8,
+                color="#3366CC",
+                opacity=0.5,
+                line=dict(color="#1F4788", width=1)
+            ),
+            text=dominated_models,
+            hovertemplate=(
+                "<b>%{text}</b><br>"
+                "Creator: " + "{}<br>".format(dominated_creators[0] if dominated_creators else "N/A") +
+                f"{x_col}: %{{x:.2f}}<br>"
+                f"{y_col}: %{{y:.2f}}<br>"
+                "Pareto Status: Dominated<br>"
+                "<extra></extra>"
+            ),
+        ))
+
+    # Add Pareto-efficient models (highlighted)
+    if np.any(pareto_mask):
+        pareto_x = x_data[pareto_mask]
+        pareto_y = y_data[pareto_mask]
+        pareto_models = [models[i] for i in range(len(models)) if pareto_mask[i]]
+        pareto_creators = [creators[i] for i in range(len(creators)) if pareto_mask[i]]
+
+        fig.add_trace(go.Scatter(
+            x=pareto_x,
+            y=pareto_y,
+            mode="markers",
+            name="Pareto Efficient",
+            marker=dict(
+                size=15,
+                color="#d62728",  # Red
+                line=dict(color="black", width=1.5),
+            ),
+            text=pareto_models,
+            hovertemplate=(
+                "<b>%{text}</b><br>"
+                "Creator: " + "{}<br>".format(pareto_creators[0] if pareto_creators else "N/A") +
+                f"{x_col}: %{{x:.2f}}<br>"
+                f"{y_col}: %{{y:.2f}}<br>"
+                "Pareto Status: <b>Efficient</b><br>"
+                "<extra></extra>"
+            ),
+        ))
+
+        # Annotate top 5 efficient models (by y value, descending)
+        pareto_df = df.filter(pl.col(pareto_col) == True)
+        if len(pareto_df) > 0:
+            # Sort by y_col descending and take top 5
+            top_models = pareto_df.sort(y_col, descending=True).head(5)
+
+            annotations = []
+            for row in top_models.iter_rows(named=True):
+                annotations.append(
+                    go.layout.Annotation(
+                        x=row[x_col],
+                        y=row[y_col],
+                        text=row.get("Model", row.get("model_id", "Unknown")),
+                        showarrow=True,
+                        arrowhead=2,
+                        arrowsize=1,
+                        arrowwidth=1,
+                        arrowcolor="#666666",
+                        ax=20,
+                        ay=-30,
+                        font=dict(size=9, color="#333333"),
+                        bgcolor="rgba(255,255,255,0.8)",
+                        bordercolor="#cccccc",
+                        borderwidth=1,
+                        borderpad=3,
+                    )
+                )
+
+            fig.update_layout(annotations=annotations)
+
+    # Add trend line if n>50 (using polynomial fit as proxy for LOWESS)
+    if len(x_data) > 50:
+        # Sort by x for line plotting
+        sort_idx = np.argsort(x_data)
+        x_sorted = x_data[sort_idx]
+        y_sorted = y_data[sort_idx]
+
+        # Fit 2nd degree polynomial
+        try:
+            coeffs = np.polyfit(x_sorted, y_sorted, 2)
+            poly_fn = np.poly1d(coeffs)
+            y_trend = poly_fn(x_sorted)
+
+            fig.add_trace(go.Scatter(
+                x=x_sorted,
+                y=y_trend,
+                mode="lines",
+                name="Trend Line",
+                line=dict(color="#666666", width=2, dash="dash"),
+                hoverinfo="skip",
+            ))
+        except Exception:
+            pass  # Skip trend line if fit fails
+
+    # Configure axes
+    fig.update_layout(
+        xaxis_title=x_col.replace("_", " ").title(),
+        yaxis_title=y_col.replace("_", " ").title(),
+        hovermode="closest",
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.98,
+            xanchor="left",
+            x=0.02,
+        ),
+    )
+
+    # Apply consistent theme
+    fig = configure_layout(fig, title)
+
+    return fig
+
+
+def create_provider_comparison(
+    provider_df: pl.DataFrame,
+    metrics: list[str] = None
+) -> go.Figure:
+    """
+    Create 3-panel provider comparison dashboard with cluster color-coding.
+
+    Generates a scatter plot matrix showing provider relationships across three
+    key metrics: Intelligence vs Price, Intelligence vs Speed, and Price vs Speed.
+    Points are colored by cluster assignment and sized by model count. Cluster
+    centroids are displayed as star markers.
+
+    Parameters
+    ----------
+    provider_df : pl.DataFrame
+        Provider-level DataFrame with cluster assignments and metrics.
+    metrics : list[str], optional
+        List of metric column names. Default: ["avg_intelligence", "avg_price", "avg_speed"].
+
+    Returns
+    -------
+    go.Figure
+        Interactive Plotly 3-panel scatter plot with hover tooltips, zoom, and pan.
+
+    Examples
+    --------
+    >>> provider_df = pl.read_parquet("data/processed/provider_clusters.parquet")
+    >>> fig = create_provider_comparison(
+    ...     provider_df,
+    ...     metrics=["avg_intelligence", "avg_price", "avg_speed"]
+    ... )
+    >>> fig.show()
+
+    Notes
+    -----
+    - 3-panel layout: Intelligence-Price, Intelligence-Speed, Price-Speed
+    - Color by cluster: 0=Budget-Friendly, 1=Premium Performance
+    - Size by model_count: Larger bubbles = more models from provider
+    - Cluster centroids: Star markers with "Centroid" label
+    - Hover shows: Creator, cluster, region, and metric values
+    - Uses plotly_white template for clean publication-ready figures
+    """
+    if metrics is None:
+        metrics = ["avg_intelligence", "avg_price", "avg_speed"]
+
+    # Validate metrics exist
+    for metric in metrics:
+        if metric not in provider_df.columns:
+            raise ValueError(f"Column '{metric}' not found in provider_df")
+
+    # Extract data
+    creators = provider_df["Creator"].to_list()
+    clusters = provider_df["cluster"].to_numpy() if "cluster" in provider_df.columns else np.zeros(len(provider_df))
+    regions = provider_df["region"].to_list() if "region" in provider_df.columns else ["Unknown"] * len(provider_df)
+    model_counts = provider_df["model_count"].to_numpy() if "model_count" in provider_df.columns else np.ones(len(provider_df))
+
+    # Extract metric data
+    intelligence = provider_df["avg_intelligence"].cast(pl.Float64).to_numpy()
+    price = provider_df["avg_price"].cast(pl.Float64).to_numpy()
+    speed = provider_df["avg_speed"].cast(pl.Float64).to_numpy()
+
+    # Create cluster label mapping
+    cluster_labels = {0: "Budget-Friendly", 1: "Premium Performance"}
+    cluster_colors = {0: "#3366CC", 1: "#d62728"}
+
+    # Create 3-panel subplots
+    fig = make_subplots(
+        rows=1,
+        cols=3,
+        subplot_titles=(
+            "Intelligence vs Price",
+            "Intelligence vs Speed",
+            "Price vs Speed"
+        ),
+        horizontal_spacing=0.05,
+    )
+
+    # Define subplot configurations
+    subplots = [
+        {"x": intelligence, "y": price, "x_title": "Intelligence Index", "y_title": "Price (USD)", "row": 1, "col": 1},
+        {"x": intelligence, "y": speed, "x_title": "Intelligence Index", "y_title": "Speed (tokens/s)", "row": 1, "col": 2},
+        {"x": price, "y": speed, "x_title": "Price (USD)", "y_title": "Speed (tokens/s)", "row": 1, "col": 3},
+    ]
+
+    # Add traces for each cluster
+    for cluster_id in np.unique(clusters):
+        cluster_mask = clusters == cluster_id
+        cluster_name = cluster_labels.get(int(cluster_id), f"Cluster {cluster_id}")
+        cluster_color = cluster_colors.get(int(cluster_id), "#3366CC")
+
+        for subplot_config in subplots:
+            x_data = subplot_config["x"][cluster_mask]
+            y_data = subplot_config["y"][cluster_mask]
+            sizes = model_counts[cluster_mask] * 5  # Scale for visibility
+
+            fig.add_trace(
+                go.Scatter(
+                    x=x_data,
+                    y=y_data,
+                    mode="markers",
+                    name=cluster_name,
+                    marker=dict(
+                        size=sizes,
+                        color=cluster_color,
+                        opacity=0.7,
+                        line=dict(color="white", width=1),
+                    ),
+                    legendgroup=f"cluster_{cluster_id}",
+                    hovertemplate=(
+                        "<b>%{text}</b><br>"
+                        f"{subplot_config['x_title']}: %{{x:.2f}}<br>"
+                        f"{subplot_config['y_title']}: %{{y:.2f}}<br>"
+                        "Cluster: " + cluster_name + "<br>"
+                        "Region: " + "{region}<br>".format(region=regions[list(clusters).tolist().index(cluster_id)] if cluster_mask.any() else "N/A") +
+                        "Models: %{marker.size:.0f}<br>"
+                        "<extra></extra>"
+                    ),
+                    text=[creators[i] for i in range(len(creators)) if cluster_mask[i]],
+                ),
+                row=subplot_config["row"],
+                col=subplot_config["col"],
+            )
+
+    # Add cluster centroids
+    for cluster_id in np.unique(clusters):
+        cluster_mask = clusters == cluster_id
+        cluster_name = cluster_labels.get(int(cluster_id), f"Cluster {cluster_id}")
+
+        for subplot_config in subplots:
+            centroid_x = float(np.mean(subplot_config["x"][cluster_mask]))
+            centroid_y = float(np.mean(subplot_config["y"][cluster_mask]))
+
+            fig.add_trace(
+                go.Scatter(
+                    x=[centroid_x],
+                    y=[centroid_y],
+                    mode="markers",
+                    name=f"{cluster_name} Centroid",
+                    marker=dict(
+                        size=20,
+                        symbol="star",
+                        color="gold",
+                        line=dict(color="black", width=2),
+                    ),
+                    legendgroup=f"centroid_{cluster_id}",
+                    hovertemplate=(
+                        f"<b>{cluster_name} Centroid</b><br>"
+                        f"{subplot_config['x_title']}: {centroid_x:.2f}<br>"
+                        f"{subplot_config['y_title']}: {centroid_y:.2f}<br>"
+                        "<extra></extra>"
+                    ),
+                ),
+                row=subplot_config["row"],
+                col=subplot_config["col"],
+            )
+
+    # Update axes labels
+    for i, subplot_config in enumerate(subplots, start=1):
+        fig.update_xaxes(title_text=subplot_config["x_title"], row=1, col=i)
+        fig.update_yaxes(title_text=subplot_config["y_title"], row=1, col=i)
+
+    # Configure layout
+    fig.update_layout(
+        hovermode="closest",
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.98,
+            xanchor="left",
+            x=1.02,  # Place legend outside plot
+        ),
+        margin=dict(l=20, r=160, t=40, b=20),  # Extra right margin for legend
+    )
+
+    # Apply consistent theme
+    fig = configure_layout(fig, "Provider Market Segments")
+
+    return fig
+
+
+def create_context_window_analysis(
+    df: pl.DataFrame,
+    tier_col: str,
+    context_col: str = "context_window"
+) -> go.Figure:
+    """
+    Create interactive context window analysis by intelligence tier.
+
+    Generates a box plot showing context window distributions across intelligence
+    tiers (Q1-Q4) with individual model points overlaid as jittered strip plot.
+    Includes annotations for mean and median values per tier.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        Input DataFrame with intelligence tiers and context window data.
+    tier_col : str
+        Column name containing intelligence tier (Q1, Q2, Q3, Q4).
+    context_col : str, default="context_window"
+        Column name containing context window size in tokens.
+
+    Returns
+    -------
+    go.Figure
+        Interactive Plotly box plot with strip plot overlay, hover tooltips, zoom, and pan.
+
+    Examples
+    --------
+    >>> df = pl.read_parquet("data/processed/ai_models_deduped.parquet")
+    >>> fig = create_context_window_analysis(
+    ...     df,
+    ...     tier_col="intelligence_tier",
+    ...     context_col="context_window"
+    ... )
+    >>> fig.show()
+
+    Notes
+    -----
+    - Box plot shows: median, Q1, Q3, whiskers (1.5*IQR), outliers
+    - Strip plot overlay: Individual model points with jitter for visibility
+    - Hover shows: Model name, Creator, tier, context window size
+    - Annotations: Mean and median values per tier
+    - Log scale y-axis if context window range > 1M tokens
+    - Colors: Sequential blue palette for visual clarity
+    """
+    # Extract data
+    tiers = df[tier_col].unique().to_list()
+    tiers_sorted = sorted(tiers, key=lambda x: (
+        0 if str(x).startswith("Q1") else
+        1 if str(x).startswith("Q2") else
+        2 if str(x).startswith("Q3") else
+        3
+    ))
+
+    # Check if log scale is needed (range > 1M)
+    context_data = df[context_col].cast(pl.Float64).to_numpy()
+    use_log_scale = context_data.max() - context_data.min() > 1_000_000
+
+    # Create figure
+    fig = go.Figure()
+
+    # Add box plots and strip plots for each tier
+    for tier in tiers_sorted:
+        tier_data = df.filter(pl.col(tier_col) == tier)
+        context_values = tier_data[context_col].cast(pl.Float64).to_numpy()
+        models = tier_data["Model"].to_list()
+        creators = tier_data["Creator"].to_list()
+
+        # Calculate statistics for annotations
+        tier_mean = float(np.mean(context_values))
+        tier_median = float(np.median(context_values))
+
+        # Add box plot
+        fig.add_trace(go.Box(
+            x=[str(tier)] * len(context_values),
+            y=context_values,
+            name=str(tier),
+            boxmean="sd",  # Show mean and standard deviation
+            marker_color="#3366CC",
+            marker_line=dict(color="#1F4788", width=1),
+            line_color="#1F4788",
+            legendgroup=str(tier),
+            hovertemplate=(
+                f"<b>Tier {tier}</b><br>"
+                f"Context Window: %{{y:,.0f}} tokens<br>"
+                f"Mean: {tier_mean:,.0f}<br>"
+                f"Median: {tier_median:,.0f}<br>"
+                "<extra></extra>"
+            ),
+        ))
+
+        # Add strip plot (jittered points) for individual models
+        jitter = np.random.uniform(-0.1, 0.1, size=len(context_values))
+        fig.add_trace(go.Scatter(
+            x=[int(str(tier)[1]) + j for j in jitter],  # Convert Q1->1, Q2->2, etc.
+            y=context_values,
+            mode="markers",
+            name=f"{tier} Models",
+            marker=dict(
+                size=6,
+                color="#d62728",
+                opacity=0.6,
+            ),
+            legendgroup=f"{tier}_points",
+            showlegend=False,  # Don't show in legend
+            text=models,
+            hovertemplate=(
+                "<b>%{text}</b><br>"
+                "Creator: " + "{}<br>".format(creators[0] if creators else "N/A") +
+                f"Tier: {tier}<br>"
+                f"Context Window: %{{y:,.0f}} tokens<br>"
+                "<extra></extra>"
+            ),
+        ))
+
+        # Add annotation for mean and median
+        fig.add_annotation(
+            x=str(tier),
+            y=tier_mean,
+            text=f"Mean: {tier_mean:,.0f}",
+            showarrow=False,
+            yshift=10,
+            font=dict(size=9, color="#333333"),
+            bgcolor="rgba(255,255,255,0.8)",
+            bordercolor="#cccccc",
+            borderwidth=1,
+            borderpad=3,
+        )
+
+    # Configure axes
+    fig.update_layout(
+        xaxis_title="Intelligence Tier",
+        yaxis_title="Context Window (tokens)",
+        hovermode="closest",
+        boxmode="group",
+    )
+
+    # Apply log scale if needed
+    if use_log_scale:
+        fig.update_yaxes(type="log")
+
+    # Apply consistent theme
+    fig = configure_layout(fig, "Context Window by Intelligence Tier")
+
+    return fig
