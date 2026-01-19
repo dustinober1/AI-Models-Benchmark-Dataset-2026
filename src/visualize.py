@@ -121,22 +121,21 @@ def create_distribution_histogram(
     min_val = float(np.min(data))
     max_val = float(np.max(data))
 
-    # Create histogram with Plotly Express
-    fig = px.histogram(
-        df.to_pandas(),
-        x=column,
-        nbins=30,
-        title=title,
-        labels={column: column.replace("_", " ").title()},
-        color_discrete_sequence=["#3366CC"],
-    )
+    # Create histogram with Plotly Graph Objects (avoiding pyarrow dependency)
+    fig = go.Figure()
+    fig.add_trace(go.Histogram(
+        x=data,
+        nbinsx=30,
+        marker_color="#3366CC",
+        marker_line=dict(color="#1F4788", width=1),
+        name=column,
+    ))
 
     # Enhanced hover template with model names and statistics
     hover_template = (
-        "<b>%{x}</b><br>"
+        "<b>Value: %{x}</b><br>"
         "Count: %{y}<br>"
-        "Percentage: %{y:.1f}%<br>"
-        f"<br><b>Statistics:</b><br>"
+        "<br><b>Statistics:</b><br>"
         f"Mean: {mean_val:.2f}<br>"
         f"Median: {median_val:.2f}<br>"
         f"Min: {min_val:.2f}<br>"
@@ -144,10 +143,7 @@ def create_distribution_histogram(
         "<extra></extra>"
     )
 
-    fig.update_traces(
-        hovertemplate=hover_template,
-        marker_line=dict(color="#1F4788", width=1),
-    )
+    fig.update_traces(hovertemplate=hover_template)
 
     # Enable zoom, pan, and reset buttons
     fig.update_layout(
@@ -210,54 +206,39 @@ def create_box_plot(
     - Enabled zoom, pan, and reset buttons
     - Color: Provider-based coloring for visual distinction
     """
-    # Convert to pandas for Plotly Express
-    df_pandas = df.to_pandas()
+    # Extract data using Polars (avoiding pyarrow dependency)
+    categories = df[x_col].unique().to_list()
 
-    # Create box plot with Plotly Express
-    fig = px.box(
-        df_pandas,
-        x=x_col,
-        y=y_col,
-        title=title,
-        labels={x_col: x_col.replace("_", " ").title(), y_col: y_col.replace("_", " ").title()},
-        color=x_col if x_col in df_pandas.columns else None,
-    )
+    # Create box plot with Plotly Graph Objects
+    fig = go.Figure()
 
-    # Add jittered points for individual model visibility
-    fig.add_trace(
-        go.Scatter(
-            x=df_pandas[x_col],
-            y=df_pandas[y_col],
-            mode="markers",
-            name="Individual Models",
-            marker=dict(
-                color="rgba(0, 0, 0, 0.3)",
-                size=4,
-                opacity=0.6,
-            ),
-            hovertemplate=(
-                f"<b>%{{x}}</b><br>"
-                f"Model: %{{customdata[0]}}<br>"
-                f"{y_col}: %{{y:.2f}}<br>"
-                "<extra></extra>"
-            ),
-            customdata=df_pandas[["Model"]].values if "Model" in df_pandas.columns else None,
-            showlegend=False,
-        )
-    )
+    # Add box traces for each category
+    for category in sorted(categories):
+        category_data = df.filter(pl.col(x_col) == category)
+        y_values = category_data[y_col].cast(pl.Float64).to_numpy()
+
+        # Add box plot
+        fig.add_trace(go.Box(
+            y=y_values,
+            name=str(category),
+            boxmean=True,  # Show mean
+            jitter=0.3,    # Add jitter for individual point visibility
+            pointpos=-1.8, # Position points
+            marker_color="#3366CC",
+            marker_line=dict(color="#1F4788", width=1),
+        ))
 
     # Enhanced hover template for box plot
-    fig.update_traces(
-        selector=dict(type="box"),
-        hovertemplate=(
-            "<b>%{x}</b><br>"
-            f"{y_col}: %{{y:.2f}}<br>"
-            "Median: %{median:.2f}<br>"
-            "Q1: %{q1:.2f}<br>"
-            "Q3: %{q3:.2f}<br>"
-            "<extra></extra>"
-        ),
+    hover_template = (
+        "<b>%{x}</b><br>"
+        f"{y_col}: %{{y:.2f}}<br>"
+        "Median: %{median:.2f}<br>"
+        "Q1: %{q1:.2f}<br>"
+        "Q3: %{q3:.2f}<br>"
+        "<extra></extra>"
     )
+
+    fig.update_traces(hovertemplate=hover_template)
 
     # Enable zoom, pan, and reset buttons
     fig.update_layout(
