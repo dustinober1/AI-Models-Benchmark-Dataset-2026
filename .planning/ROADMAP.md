@@ -79,12 +79,12 @@ Plans:
   8. Context window analysis chart shows distribution by intelligence tier
   9. Linked brushing connects related visualizations for cross-filtering
   10. All figures are pre-generated and saved to reports/figures/ for fast notebook loading
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] 03-01: Distribution and correlation visualizations
-- [ ] 03-02: Provider and frontier analysis charts
-- [ ] 03-03: Tradeoff and linked brushing visualizations
+- [ ] 03-01-PLAN.md — Distribution and correlation visualizations (6 plots: 5 histograms + 1 heatmap)
+- [ ] 03-02-PLAN.md — Provider and frontier analysis charts (4 plots: 2 Pareto frontiers + 1 provider dashboard + 1 context window analysis)
+- [ ] 03-03-PLAN.md — Tradeoff and linked brushing visualizations (2 plots: 1 speed-intelligence tradeoff + 1 linked dashboard + master index)
 
 ### Phase 4: Narrative Synthesis & Publication
 **Goal**: Deliver a compelling Kaggle notebook that engages readers with novel insights
