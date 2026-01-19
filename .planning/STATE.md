@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 ## Current Position
 
 Phase: 3 of 4 (Interactive Visualizations) — In Progress
-Plan: 01 of ? (Distribution Visualizations)
-Status: Plan 03-01 complete — 13 interactive Plotly visualizations generated
-Last activity: 2026-01-19 — Completed interactive distribution visualizations: 2 tasks, 2 minutes
+Plan: 02 of ? (Provider and Frontier Visualizations)
+Status: Plan 03-02 complete — Interactive Pareto frontiers, provider dashboard, and context window analysis
+Last activity: 2026-01-19 — Completed provider and frontier visualizations: 2 tasks, 3 minutes
 
-Progress: [███░░░░░░] 23% (14 of 61 plans complete: 8 Phase 1 + 5 Phase 2 + 1 Phase 3)
+Progress: [███░░░░░░] 25% (15 of 61 plans complete: 8 Phase 1 + 5 Phase 2 + 2 Phase 3)
 
 ## Verification Status
 
@@ -49,9 +49,9 @@ Phase 2 verified: **passed** (31/31 must-haves)
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 3.9 minutes
-- Total execution time: 0.9 hours (55 minutes)
+- Total plans completed: 15
+- Average duration: 3.8 minutes
+- Total execution time: 1.0 hours (57 minutes)
 
 **By Phase:**
 
@@ -59,11 +59,11 @@ Phase 2 verified: **passed** (31/31 must-haves)
 |-------|-------|----------|----------|
 | 1 (Data Pipeline) | 8 | 8 | 3.9 min |
 | 2 (Statistical Analysis) | 5 | 5 | 4.8 min |
-| 3 (Visualizations) | ? | 1 | 2.0 min |
+| 3 (Visualizations) | ? | 2 | 2.5 min |
 | 4 (Narrative) | 0 | 0 | - |
 
 **Recent Trend:**
-- Last 13 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min), 02-02 (5 min), 02-03 (7 min), 02-04 (3 min), 02-05 (5 min)
+- Last 14 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min), 02-02 (5 min), 02-03 (7 min), 02-04 (3 min), 02-05 (5 min), 03-01 (2 min), 03-02 (3 min)
 - Trend: Consistent velocity ~4.1 min/plan
 
 *Updated after each plan completion*
@@ -239,6 +239,18 @@ Recent decisions affecting current work:
 - Zoom, pan, and reset buttons enabled for all figures
 - Combined dashboards: interactive_distributions.html (5 subplots), interactive_box_plots.html (5 subplots)
 
+**From Plan 03-02 (Provider and Frontier Visualizations):**
+- Extended Plotly utilities: create_pareto_frontier_chart(), create_provider_comparison(), create_context_window_analysis()
+- Pareto frontier charts highlight efficient models in red with larger markers (size=15) and annotations
+- Provider comparison dashboard: 3-panel scatter (Intelligence-Price, Intelligence-Speed, Price-Speed) with cluster color-coding
+- Cluster centroids displayed as gold star markers for Budget vs Premium segments
+- Context window analysis uses automatic log-scale detection (applies when range > 1M tokens)
+- Intelligence quartile computation: Q1 (≤14), Q2 (14-20), Q3 (20-29), Q4 (>29) for tier-based analysis
+- Combined dashboard uses HTML wrapper with iframe embeds for simplicity and maintainability
+- All charts include hover tooltips with model names, creators, and relevant metrics
+- 4 interactive visualizations generated (VIZ-05, VIZ-06, VIZ-08) plus combined dashboard
+- Bug fixes: Region array access (numpy indexing), tier handling for "Unknown" category
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
@@ -310,6 +322,12 @@ None yet.
 **Phase 2 Status:** COMPLETE — Verified 31/31 must-haves, all goals achieved
 
 **Phase 3 Readiness:**
+- Distribution visualizations complete: 5 histograms, 5 box plots, 1 correlation heatmap, 2 combined dashboards
+- Pareto frontier visualizations complete: Intelligence-Price, Speed-Intelligence with efficient models highlighted
+- Provider comparison dashboard complete: 3-panel scatter with Budget vs Premium cluster color-coding
+- Context window analysis complete: Box plot by intelligence tier with automatic log-scale
+- All interactive charts use plotly_white template with consistent styling (12pt font, 14pt titles)
+- Standalone HTML files with Plotly CDN for easy sharing and presentation
 - Deduplicated dataset: data/processed/ai_models_deduped.parquet (187 models, 18 columns)
 - Correlation matrix: 5x5 Spearman with FDR correction (all 10 correlations significant)
 - Pareto frontier data: data/processed/pareto_frontier.parquet (187 models, 21 columns)
@@ -319,14 +337,12 @@ None yet.
 - Non-parametric approach validated: All analyses use appropriate methods for skewed distributions
 - Market leaders: GPT-5.2 (IQ=51), Gemini 3 Flash (value leader)
 - Market segments: Budget (24 providers) vs Premium (12 providers)
-- Visualizations ready to convert from matplotlib to Plotly for interactivity
-- 12 existing figures to enhance with hover, zoom, and linked brushing
 - Known issues: Non-normal distributions, context window extreme skewness (9.63)
 - Use model_id (not Model) for all aggregations
 
 ## Session Continuity
 
-Last session: 2026-01-19 (Phase 3 Plan 01 execution)
-Stopped at: Completed 03-01 (Interactive Distribution Visualizations)
+Last session: 2026-01-19 (Phase 3 Plan 02 execution)
+Stopped at: Completed 03-02 (Provider and Frontier Visualizations)
 Resume file: None
-Next: Phase 3 Plan 02 or continue to next visualization plan
+Next: Phase 3 Plan 03 or continue to next visualization plan
