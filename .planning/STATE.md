@@ -10,10 +10,10 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 ## Current Position
 
 Phase: 2 of 4 (Statistical Analysis & Domain Insights) — In Progress
-Status: Plan 02-03 complete — Pareto frontier analysis identified 8 price-performance, 6 speed-intelligence, and 41 multi-objective efficient models
-Last activity: 2026-01-19 — Plan 02-03 complete: 2 tasks, 7 minutes, GPT-5.2 dominates all frontiers
+Status: Plan 02-04 complete — Provider clustering identified 2 market segments (Budget-Friendly vs Premium Performance) with regional comparison (STAT-04)
+Last activity: 2026-01-19 — Plan 02-04 complete: 2 tasks, 3 minutes, KMeans clusters 36 providers into 2 segments
 
-Progress: [██████████░] 33% (3 of 9 plans complete)
+Progress: [██████████░] 44% (4 of 9 plans complete)
 
 ## Verification Status
 
@@ -32,22 +32,22 @@ Phase 1 verified: **passed** (43/43 must-haves)
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 4.1 minutes
-- Total execution time: 0.8 hours (45 minutes)
+- Total plans completed: 12
+- Average duration: 4.0 minutes
+- Total execution time: 0.8 hours (48 minutes)
 
 **By Phase:**
 
 | Phase | Plans | Complete | Avg/Plan |
 |-------|-------|----------|----------|
 | 1 (Data Pipeline) | 8 | 8 | 3.9 min |
-| 2 (Statistical Analysis) | 3 | 11 | 5.3 min |
+| 2 (Statistical Analysis) | 4 | 12 | 4.8 min |
 | 3 (Visualizations) | 0 | ? | - |
 | 4 (Narrative) | 0 | ? | - |
 
 **Recent Trend:**
-- Last 11 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min), 02-02 (5 min), 02-03 (7 min)
-- Trend: Consistent velocity ~4.1 min/plan
+- Last 12 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min), 02-02 (5 min), 02-03 (7 min), 02-04 (3 min)
+- Trend: Consistent velocity ~4.0 min/plan
 
 *Updated after each plan completion*
 
@@ -167,6 +167,24 @@ Recent decisions affecting current work:
 - Frontier visualizations: Annotated scatter plots highlighting efficient models in red
 - Value propositions identified: Budget options (GLM-4.7: IQ=42, Price=$0.94), premium models (GPT-5.2: IQ=51, Price=$4.81)
 
+**From Plan 02-04 (Provider Clustering):**
+- Provider clustering utilities: aggregate_by_provider(), find_optimal_clusters(), cluster_providers(), validate_clustering(), assign_region(), compare_regions()
+- Provider-level aggregation: 181 models aggregated to 36 providers by intelligence, price, speed
+- KMeans clustering with StandardScaler normalization (3 features: avg_intelligence, avg_price, avg_speed)
+- Optimal K=2 determined by silhouette score (0.390, moderate cluster structure)
+- Market segments identified:
+  - Cluster 0 (24 providers): Budget-Friendly Segment ($0.35, IQ=17.9, Speed=34.3)
+  - Cluster 1 (12 providers): Premium Performance Segment ($1.53, IQ=29.0, Speed=117.4)
+- Premium Performance providers: OpenAI, Anthropic, Google, Amazon, Mistral, Cohere, etc.
+- Budget-Friendly providers: Alibaba, DeepSeek, Meta, Microsoft, Baidu, IBM, etc.
+- STAT-04 regional comparison completed:
+  - Intelligence: Similar across regions (China 22.2, Europe 18.8, Other 21.1, US 22.6)
+  - Price: US highest ($1.53), China mid-range ($0.93), Europe/Other lower ($0.55/$0.44)
+  - Speed: Europe fastest (142.3 tokens/s), US second (118.4), China/Other slower (66.4/59.9)
+- Manual region assignment: Case-insensitive substring matching for US (OpenAI, Anthropic, Google, Meta, Microsoft), China (DeepSeek, Alibaba, Tencent, Baidu), Europe (Mistral, Aleph Alpha), Other (unknown)
+- Provider clusters dataset: data/processed/provider_clusters.parquet (36 providers, 8 columns with cluster assignments)
+- Clustering visualizations: Silhouette scores plot, elbow plot, 3-panel scatter analysis
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
@@ -237,11 +255,13 @@ None yet.
 
 **Phase 2 Readiness:**
 - Dataset: data/processed/pareto_frontier.parquet (187 models, 181 with valid intelligence, 21 columns)
+- Provider clusters: data/processed/provider_clusters.parquet (36 providers, 2 clusters, regional assignments)
 - Pareto flags available for filtering and group comparisons
-- Correlation matrix with FDR correction available for provider clustering
+- STAT-04 complete: Regional comparison shows US highest price, Europe fastest speed, similar intelligence
 - STAT-05 complete: Context window by intelligence tier analysis available
 - Non-parametric approach validated: Spearman correlation appropriate for skewed distributions
 - Market leaders identified: GPT-5.2 dominates all frontiers, Gemini 3 Flash exceptional value
+- Market segments: Budget-Friendly (24 providers) vs Premium Performance (12 providers)
 - Value propositions: Budget (GLM-4.7), premium (GPT-5.2), balanced (Gemini 3 Flash)
 - Known issues: Non-normal distributions, 6 models lack intelligence_index, context window extreme skewness (9.63)
 - Statistical approach: Non-parametric methods required (Spearman, Mann-Whitney U, Kruskal-Wallis)
@@ -250,7 +270,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-19 (Plan 02-03 execution)
-Stopped at: Completed Plan 02-03 (Pareto Frontier Analysis)
+Last session: 2026-01-19 (Plan 02-04 execution)
+Stopped at: Completed Plan 02-04 (Provider Clustering)
 Resume file: None
-Next: Plan 02-04 (Statistical Tests) or Plan 02-05 (Provider Clustering)
+Next: Plan 02-05 (Statistical Tests) or Plan 02-06 (Provider Analysis)
