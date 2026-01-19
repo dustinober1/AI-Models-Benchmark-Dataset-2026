@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 
 ## Current Position
 
-Phase: 1 of 4 (Data Pipeline & Quality Assessment) — COMPLETE
-Status: Phase 1 verified — 43/43 must-haves verified, goal achieved
-Last activity: 2026-01-18 — Phase 1 execution complete: 8 plans across 6 waves, 31 minutes total, 75% quality score
+Phase: 2 of 4 (Statistical Analysis & Domain Insights) — In Progress
+Status: Plan 02-01 complete — Duplicate resolution resolved 34 model names, 187 unique model_ids
+Last activity: 2026-01-18 — Plan 02-01 complete: 2 tasks, 4 minutes, 0 remaining duplicates
 
-Progress: [██████████] 100% (8 of 8 plans complete)
+Progress: [██████████░] 11% (1 of 9 plans complete)
 
 ## Verification Status
 
@@ -32,21 +32,21 @@ Phase 1 verified: **passed** (43/43 must-haves)
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 3.9 minutes
-- Total execution time: 0.5 hours (31 minutes)
+- Total execution time: 0.6 hours (35 minutes)
 
 **By Phase:**
 
 | Phase | Plans | Complete | Avg/Plan |
 |-------|-------|----------|----------|
 | 1 (Data Pipeline) | 8 | 8 | 3.9 min |
-| 2 (Statistical Analysis) | 0 | ? | - |
+| 2 (Statistical Analysis) | 1 | 9 | 4.0 min |
 | 3 (Visualizations) | 0 | ? | - |
 | 4 (Narrative) | 0 | ? | - |
 
 **Recent Trend:**
-- Last 8 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min)
+- Last 9 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min)
 - Trend: Consistent velocity ~3.9 min/plan
 
 *Updated after each plan completion*
@@ -127,6 +127,20 @@ Recent decisions affecting current work:
 - Pipeline completion summary: reports/pipeline_summary.md (509 lines, complete Phase 1 documentation)
 - Phase 1 status: COMPLETE - Ready for Phase 2 Statistical Analysis
 
+**From Plan 02-01 (Duplicate Resolution):**
+- Duplicate resolution utilities: detect_duplicates(), resolve_duplicate_models(), validate_resolution()
+- Multi-stage disambiguation strategy: Primary (context_window) → Secondary (intelligence_index) → Tertiary (unique())
+- 34 duplicate model names resolved using context_window as primary differentiator
+- Secondary intelligence_index disambiguation for models with same name AND context window
+- Removed 1 true duplicate row (Exaone 4.0 1.2B) where all columns were identical
+- Deduplicated dataset: data/processed/ai_models_deduped.parquet (187 models, 18 columns)
+- Unique model_id column created for accurate group-by operations in Phase 2
+- Original Model column preserved for reference
+- Validation confirmed 0 remaining duplicates, all model_ids unique
+- 6 models with null intelligence_index filled with -1 for disambiguation (model_id ends with "_-1")
+- Intelligence-specific analyses should filter to n=181 models with valid IQ scores
+- Resolution report generated: reports/duplicate_resolution_2026-01-18.md
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
@@ -171,17 +185,25 @@ None yet.
 - Context Window extreme skewness (9.63) - log transformation recommended
 - 10 outliers flagged (5.32%) - assess impact on correlation and statistical tests
 
+**From Plan 02-01:**
+- 34 duplicate model names resolved - 0 remaining duplicates
+- Unique model_id column created for group-by operations
+- 6 models with null intelligence_index (filled with -1 for disambiguation)
+- Intelligence-specific analyses should filter to n=181 (exclude null IQ scores)
+
 **Phase 1 Status:** COMPLETE — Verified 43/43 must-haves, 75% quality score
 
 **Phase 2 Readiness:**
-- Dataset: data/processed/ai_models_enriched.parquet (188 models, 16 columns)
-- Known issues: 34 duplicate model names (18.1%), non-normal distributions
+- Dataset: data/processed/ai_models_deduped.parquet (187 models, 18 columns)
+- Unique model_id column for accurate group-by operations
+- Known issues: Non-normal distributions, 6 models lack intelligence_index
 - Statistical approach: Non-parametric methods required (Spearman, Mann-Whitney U, Kruskal-Wallis)
 - 10 outliers flagged (5.32%) - assess impact on correlations
+- Use model_id (not Model) for all group-by operations
 
 ## Session Continuity
 
-Last session: 2026-01-18 (Phase 1 execution)
-Stopped at: Phase 1 complete and verified
+Last session: 2026-01-18 (Plan 02-01 execution)
+Stopped at: Completed Plan 02-01 (Duplicate Resolution)
 Resume file: None
-Next: Phase 2 - Statistical Analysis & Domain Insights
+Next: Plan 02-02 (Correlation Analysis)
