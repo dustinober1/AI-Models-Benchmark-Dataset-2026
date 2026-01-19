@@ -10,10 +10,10 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 ## Current Position
 
 Phase: 2 of 4 (Statistical Analysis & Domain Insights) — In Progress
-Status: Plan 02-01 complete — Duplicate resolution resolved 34 model names, 187 unique model_ids
-Last activity: 2026-01-18 — Plan 02-01 complete: 2 tasks, 4 minutes, 0 remaining duplicates
+Status: Plan 02-02 complete — Spearman correlation analysis with FDR correction, STAT-05 context window tier analysis
+Last activity: 2026-01-19 — Plan 02-02 complete: 2 tasks, 5 minutes, all 10 correlations significant
 
-Progress: [██████████░] 11% (1 of 9 plans complete)
+Progress: [████████████] 22% (2 of 9 plans complete)
 
 ## Verification Status
 
@@ -32,22 +32,22 @@ Phase 1 verified: **passed** (43/43 must-haves)
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 3.9 minutes
-- Total execution time: 0.6 hours (35 minutes)
+- Total plans completed: 10
+- Average duration: 4.0 minutes
+- Total execution time: 0.7 hours (40 minutes)
 
 **By Phase:**
 
 | Phase | Plans | Complete | Avg/Plan |
 |-------|-------|----------|----------|
 | 1 (Data Pipeline) | 8 | 8 | 3.9 min |
-| 2 (Statistical Analysis) | 1 | 9 | 4.0 min |
+| 2 (Statistical Analysis) | 2 | 10 | 4.5 min |
 | 3 (Visualizations) | 0 | ? | - |
 | 4 (Narrative) | 0 | ? | - |
 
 **Recent Trend:**
-- Last 9 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min)
-- Trend: Consistent velocity ~3.9 min/plan
+- Last 10 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min), 02-02 (5 min)
+- Trend: Consistent velocity ~4.0 min/plan
 
 *Updated after each plan completion*
 
@@ -141,6 +141,18 @@ Recent decisions affecting current work:
 - Intelligence-specific analyses should filter to n=181 models with valid IQ scores
 - Resolution report generated: reports/duplicate_resolution_2026-01-18.md
 
+**From Plan 02-02 (Correlation Analysis):**
+- Statistical analysis utilities: compute_spearman_correlation(), compute_correlation_matrix(), apply_fdr_correction(), interpret_correlation(), group_by_quartile()
+- Non-parametric approach validated: Spearman correlation throughout due to right-skewed distributions from Phase 1
+- FDR correction: Benjamini-Hochberg applied for multiple testing (10 pairwise correlations, all significant after correction)
+- STAT-05 context window tier analysis: Intelligence quartiles (Q1-Q4) show moderate positive correlation with context window (ρ=0.542)
+- Key findings: Intelligence-Price (ρ=0.590, moderate), Intelligence-Context Window (ρ=0.542, moderate), Intelligence-Speed (ρ=0.261, weak)
+- Correlation matrix with FDR correction available for Pareto frontier analysis and provider clustering
+- Context window by intelligence tier: Q1 (331K mean), Q2 (286K), Q3 (383K), Q4 (490K) - clear positive trend
+- Display name mapping: Internal column names mapped to user-friendly labels for reports and visualizations
+- Matplotlib box plots: Direct numpy array extraction avoids pyarrow dependency
+- Narrative report: Methodology, significant findings (all 10), null findings (none per STAT-11), interpretations (NARR-07)
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
@@ -191,19 +203,31 @@ None yet.
 - 6 models with null intelligence_index (filled with -1 for disambiguation)
 - Intelligence-specific analyses should filter to n=181 (exclude null IQ scores)
 
+**From Plan 02-02:**
+- All 10 pairwise correlations statistically significant after FDR correction - robust relationships across all variables
+- Moderate Intelligence-Price correlation (ρ=0.590) - premium pricing for smarter models
+- Moderate Intelligence-Context Window correlation (ρ=0.542) - higher intelligence models have larger context windows
+- Weak Intelligence-Speed correlation (ρ=0.261) - smarter models aren't necessarily faster
+- Context window extreme skewness (9.63) - may need log transformation for parametric tests
+- Use intelligence_index (Int64) column, not "Intelligence Index" (String with placeholders)
+- Matplotlib direct numpy extraction avoids pyarrow dependency
+
 **Phase 1 Status:** COMPLETE — Verified 43/43 must-haves, 75% quality score
 
 **Phase 2 Readiness:**
-- Dataset: data/processed/ai_models_deduped.parquet (187 models, 18 columns)
+- Dataset: data/processed/ai_models_deduped.parquet (187 models, 181 with valid intelligence)
 - Unique model_id column for accurate group-by operations
-- Known issues: Non-normal distributions, 6 models lack intelligence_index
+- Correlation matrix with FDR correction available for Pareto frontier and provider clustering
+- STAT-05 complete: Context window by intelligence tier analysis available
+- Non-parametric approach validated: Spearman correlation appropriate for skewed distributions
+- Known issues: Non-normal distributions, 6 models lack intelligence_index, context window extreme skewness (9.63)
 - Statistical approach: Non-parametric methods required (Spearman, Mann-Whitney U, Kruskal-Wallis)
 - 10 outliers flagged (5.32%) - assess impact on correlations
 - Use model_id (not Model) for all group-by operations
 
 ## Session Continuity
 
-Last session: 2026-01-18 (Plan 02-01 execution)
-Stopped at: Completed Plan 02-01 (Duplicate Resolution)
+Last session: 2026-01-19 (Plan 02-02 execution)
+Stopped at: Completed Plan 02-02 (Correlation Analysis)
 Resume file: None
-Next: Plan 02-02 (Correlation Analysis)
+Next: Plan 02-03 (Pareto Frontier)
