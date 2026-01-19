@@ -1359,7 +1359,6 @@ def create_linked_brushing_dashboard(
     // Add interactivity for linked brushing
     document.addEventListener('DOMContentLoaded', function() {
         const plots = document.querySelectorAll('.plotly-graph-div');
-        console.log('Linked brushing dashboard loaded');
     });
     </script>
     """
