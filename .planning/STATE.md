@@ -10,10 +10,10 @@ See: .planning/PROJECT.md (updated 2025-01-18)
 ## Current Position
 
 Phase: 2 of 4 (Statistical Analysis & Domain Insights) — In Progress
-Status: Plan 02-04 complete — Provider clustering identified 2 market segments (Budget-Friendly vs Premium Performance) with regional comparison (STAT-04)
-Last activity: 2026-01-19 — Plan 02-04 complete: 2 tasks, 3 minutes, KMeans clusters 36 providers into 2 segments
+Status: Plan 02-05 complete — Bootstrap CI and statistical testing revealed regional speed differences (p=0.0064) with comprehensive uncertainty quantification
+Last activity: 2026-01-19 — Plan 02-05 complete: 3 tasks, 5 minutes, Bootstrap CIs, non-parametric tests, 2027 trend predictions
 
-Progress: [██████████░] 44% (4 of 9 plans complete)
+Progress: [██████████░] 56% (5 of 9 plans complete)
 
 ## Verification Status
 
@@ -32,22 +32,22 @@ Phase 1 verified: **passed** (43/43 must-haves)
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 4.0 minutes
-- Total execution time: 0.8 hours (48 minutes)
+- Total plans completed: 13
+- Average duration: 4.1 minutes
+- Total execution time: 0.9 hours (53 minutes)
 
 **By Phase:**
 
 | Phase | Plans | Complete | Avg/Plan |
 |-------|-------|----------|----------|
 | 1 (Data Pipeline) | 8 | 8 | 3.9 min |
-| 2 (Statistical Analysis) | 4 | 12 | 4.8 min |
+| 2 (Statistical Analysis) | 5 | 13 | 4.9 min |
 | 3 (Visualizations) | 0 | ? | - |
 | 4 (Narrative) | 0 | ? | - |
 
 **Recent Trend:**
-- Last 12 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min), 02-02 (5 min), 02-03 (7 min), 02-04 (3 min)
-- Trend: Consistent velocity ~4.0 min/plan
+- Last 13 plans: 01-01 (8 min), 01-02 (3 min), 01-03a (4 min), 01-03b (5 min), 01-04 (3 min), 01-05a (2 min), 01-05b (5 min), 01-06 (7 min), 02-01 (4 min), 02-02 (5 min), 02-03 (7 min), 02-04 (3 min), 02-05 (5 min)
+- Trend: Consistent velocity ~4.1 min/plan
 
 *Updated after each plan completion*
 
@@ -185,6 +185,30 @@ Recent decisions affecting current work:
 - Provider clusters dataset: data/processed/provider_clusters.parquet (36 providers, 8 columns with cluster assignments)
 - Clustering visualizations: Silhouette scores plot, elbow plot, 3-panel scatter analysis
 
+**From Plan 02-05 (Bootstrap and Statistical Testing):**
+- Bootstrap CI utilities: bootstrap_mean_ci(), bootstrap_median_ci(), bootstrap_correlation_ci(), bootstrap_group_difference_ci()
+- Non-parametric tests: mann_whitney_u_test() (2 groups), kruskal_wallis_test() (3+ groups)
+- BCa method: Bias-corrected and accelerated bootstrap with n_resamples=9999 for accurate CIs
+- Fallback to percentile method when BCa fails (degenerate distributions)
+- Regional statistical tests: Kruskal-Wallis test (US vs China vs Europe)
+  - Intelligence: No significant difference (p=0.6471)
+  - Price: No significant difference (p=0.3192)
+  - Speed: Significant difference (p=0.0064) - China fastest, US slowest
+- Pairwise Mann-Whitney U tests with FDR correction:
+  - US vs China speed: Significant (p_adj=0.0240, effect size r=-0.274)
+  - China vs Europe speed: Significant (p_adj=0.0080, effect size r=0.577)
+- Bootstrap 95% CIs for key metrics:
+  - Intelligence Index: Mean 21.81 [20.31, 23.50], Median 20.00
+  - Price (USD): Mean $1.00 [0.79, 1.29]
+  - Speed: Mean 90.72 [78.75, 105.39] token/s
+- STAT-11 satisfied: Both significant (3) and null (3) findings reported to avoid publication bias
+- NARR-09 satisfied: Comprehensive uncertainty discussion for 2027 trend predictions
+- 2027 trend predictions: Scenario analysis (optimistic, baseline, pessimistic)
+  - Intelligence: Mean 22.24-23.99 (2-10% improvement)
+  - Price: -5% to -20% reduction by intelligence tier
+  - Speed: +5% to +20% improvement (baseline 10%)
+- Uncertainty quantification: Prediction intervals, assumptions, limitations documented
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
@@ -270,7 +294,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-19 (Plan 02-04 execution)
-Stopped at: Completed Plan 02-04 (Provider Clustering)
+Last session: 2026-01-19 (Plan 02-05 execution)
+Stopped at: Completed Plan 02-05 (Bootstrap and Statistical Testing)
 Resume file: None
-Next: Plan 02-05 (Statistical Tests) or Plan 02-06 (Provider Analysis)
+Next: Plan 02-06 (Provider Analysis) or Phase 3 (Visualizations)
