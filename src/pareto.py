@@ -99,6 +99,14 @@ def compute_pareto_frontier(
     if len(df_valid) == 0:
         raise ValueError(f"No valid data points for objectives: {objective_cols}")
 
+    # Cast all objective columns to Float64 for numeric operations
+    # This handles string columns that contain numeric data
+    for col in objective_cols:
+        if df_valid[col].dtype == pl.String:
+            df_valid = df_valid.with_columns(
+                pl.col(col).cast(pl.Float64).alias(col)
+            )
+
     # Extract objective values
     # For maximization: higher is better (use as-is)
     obj_max = df_valid.select(maximize).to_numpy() if maximize else np.empty((len(df_valid), 0))
@@ -475,7 +483,7 @@ def plot_pareto_frontier(
         # Annotate Pareto-efficient models
         pareto_df = df.filter(pl.col("is_pareto_efficient") == True)
 
-        for _, row in pareto_df.iter_rows(named=True):
+        for row in pareto_df.iter_rows(named=True):
             model_name = row.get("Model", row.get("model_id", "Unknown"))
             ax.annotate(
                 model_name,
