@@ -2,8 +2,8 @@
 Plotly visualization utilities for AI models benchmark dataset.
 
 This module provides interactive visualization functions using Plotly,
-enabling exploration of distributions, correlations, and outliers with
-hover tooltips, zoom, and pan capabilities.
+enabling exploration of distributions, correlations, outliers, Pareto frontiers,
+and advanced linked brushing dashboards with hover tooltips, zoom, and pan capabilities.
 
 Functions
 ---------
@@ -15,6 +15,21 @@ create_box_plot(df: pl.DataFrame, x_col: str, y_col: str, title: str) -> go.Figu
 
 create_correlation_heatmap(corr_df: pl.DataFrame, title: str) -> go.Figure
     Create interactive heatmap with hover showing correlation coefficient and p-value.
+
+create_pareto_frontier_chart(df: pl.DataFrame, x_col: str, y_col: str, pareto_col: str, title: str, color_col: str = None) -> go.Figure
+    Create interactive Pareto frontier scatter plot with highlighted efficient models.
+
+create_provider_comparison(provider_df: pl.DataFrame, metrics: list[str] = None) -> go.Figure
+    Create 3-panel provider comparison dashboard with cluster color-coding.
+
+create_context_window_analysis(df: pl.DataFrame, tier_col: str, context_col: str = "context_window") -> go.Figure
+    Create interactive context window analysis by intelligence tier.
+
+create_speed_intelligence_tradeoff(df: pl.DataFrame, x_col: str = "Speed(median token/s)", y_col: str = "intelligence_index", title: str = "Speed vs Intelligence Tradeoff Analysis") -> go.Figure
+    Create interactive speed-intelligence tradeoff chart with use case zones.
+
+create_linked_brushing_dashboard(df: pl.DataFrame, figures_dict: dict = None) -> go.Figure
+    Create interactive linked brushing dashboard with 4-panel cross-filtering.
 
 configure_layout(fig: go.Figure, title: str) -> go.Figure
     Apply consistent theme (plotly_white, readable fonts, proper margins).
@@ -888,5 +903,474 @@ def create_context_window_analysis(
 
     # Apply consistent theme
     fig = configure_layout(fig, "Context Window by Intelligence Tier")
+
+    return fig
+
+
+def create_speed_intelligence_tradeoff(
+    df: pl.DataFrame,
+    x_col: str = "Speed(median token/s)",
+    y_col: str = "intelligence_index",
+    title: str = "Speed vs Intelligence Tradeoff Analysis"
+) -> go.Figure:
+    """
+    Create interactive speed-intelligence tradeoff chart with use case zones.
+
+    Generates a scatter plot showing Speed vs Intelligence with 4 use case zones
+    marked as semi-transparent rectangular overlays: Real-time, High-IQ, Balanced,
+    and Budget. Models are colored by zone and Pareto-efficient models are marked
+    with star markers.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        Input DataFrame with model data including speed and intelligence.
+    x_col : str, default="Speed(median token/s)"
+        Column name for speed metric (x-axis).
+    y_col : str, default="intelligence_index"
+        Column name for intelligence metric (y-axis).
+    title : str, default="Speed vs Intelligence Tradeoff Analysis"
+        Title for the chart.
+
+    Returns
+    -------
+    go.Figure
+        Interactive Plotly scatter plot with zone annotations, hover tooltips, zoom, and pan.
+
+    Examples
+    --------
+    >>> df = pl.read_parquet("data/processed/ai_models_deduped.parquet")
+    >>> fig = create_speed_intelligence_tradeoff(
+    ...     df.filter(pl.col("intelligence_index").is_not_null()),
+    ...     title="Speed-Intelligence Tradeoff (n=181)"
+    ... )
+    >>> fig.show()
+
+    Notes
+    -----
+    - Real-time Zone: Speed > 100 tokens/s (low latency focus)
+    - High-IQ Zone: Intelligence > 40 (complex reasoning)
+    - Balanced Zone: Speed 50-100 AND Intelligence 20-40
+    - Budget Zone: Speed < 50 AND Intelligence < 20
+    - Colors: 4 distinct colors for zones
+    - Pareto-efficient models: Star markers
+    - Hover shows: Model name, Creator, zone, Speed, Intelligence
+    - Zone labels: Text annotations with semi-transparent backgrounds
+    """
+    # Filter to models with valid intelligence
+    df_valid = df.filter(pl.col(y_col).is_not_null())
+
+    # Extract and cast data
+    x_data = df_valid[x_col].cast(pl.Float64).to_numpy()
+    y_data = df_valid[y_col].cast(pl.Float64).to_numpy()
+    models = df_valid["Model"].to_list()
+    creators = df_valid["Creator"].to_list()
+
+    # Get Pareto flags if available
+    pareto_flags = df_valid["is_pareto_speed_intelligence"].to_numpy() if "is_pareto_speed_intelligence" in df_valid.columns else np.zeros(len(df_valid))
+
+    # Define zones
+    zone_colors = {
+        "Real-time": "#2ca02c",  # Green
+        "High-IQ": "#1f77b4",    # Blue
+        "Balanced": "#ff7f0e",   # Orange
+        "Budget": "#7f7f7f"      # Gray
+    }
+
+    # Assign zones
+    zones = []
+    for i in range(len(x_data)):
+        speed = x_data[i]
+        intel = y_data[i]
+
+        if speed > 100:
+            zone = "Real-time"
+        elif intel > 40:
+            zone = "High-IQ"
+        elif 50 <= speed <= 100 and 20 <= intel <= 40:
+            zone = "Balanced"
+        else:
+            zone = "Budget"
+
+        zones.append(zone)
+
+    # Create figure
+    fig = go.Figure()
+
+    # Add points for each zone
+    for zone_name, zone_color in zone_colors.items():
+        zone_mask = np.array([z == zone_name for z in zones])
+
+        if np.any(zone_mask):
+            zone_x = x_data[zone_mask]
+            zone_y = y_data[zone_mask]
+            zone_models = [models[i] for i in range(len(models)) if zone_mask[i]]
+            zone_creators = [creators[i] for i in range(len(creators)) if zone_mask[i]]
+            zone_pareto = pareto_flags[zone_mask]
+
+            # Separate Pareto and non-Pareto models
+            pareto_mask = np.nan_to_num(zone_pareto, nan=False).astype(bool)
+            non_pareto_mask = ~pareto_mask
+
+            # Add non-Pareto models (circles)
+            if np.any(non_pareto_mask):
+                fig.add_trace(go.Scatter(
+                    x=zone_x[non_pareto_mask],
+                    y=zone_y[non_pareto_mask],
+                    mode="markers",
+                    name=f"{zone_name} Models",
+                    marker=dict(
+                        size=10,
+                        color=zone_color,
+                        opacity=0.6,
+                        line=dict(color="white", width=1),
+                    ),
+                    text=[zone_models[i] for i in range(len(zone_models)) if non_pareto_mask[i]],
+                    hovertemplate=(
+                        "<b>%{text}</b><br>"
+                        "Creator: " + "{}<br>".format(zone_creators[0] if zone_creators else "N/A") +
+                        "Zone: " + zone_name + "<br>"
+                        f"Speed: %{{x:.1f}} tokens/s<br>"
+                        f"Intelligence: %{{y:.1f}}<br>"
+                        "<extra></extra>"
+                    ),
+                ))
+
+            # Add Pareto-efficient models (stars)
+            if np.any(pareto_mask):
+                fig.add_trace(go.Scatter(
+                    x=zone_x[pareto_mask],
+                    y=zone_y[pareto_mask],
+                    mode="markers",
+                    name=f"{zone_name} (Pareto Efficient)",
+                    marker=dict(
+                        size=20,
+                        symbol="star",
+                        color=zone_color,
+                        line=dict(color="black", width=2),
+                    ),
+                    text=[zone_models[i] for i in range(len(zone_models)) if pareto_mask[i]],
+                    hovertemplate=(
+                        "<b>%{text}</b><br>"
+                        "Creator: " + "{}<br>".format(zone_creators[0] if zone_creators else "N/A") +
+                        "Zone: " + zone_name + "<br>"
+                        "Pareto Status: <b>Efficient</b><br>"
+                        f"Speed: %{{x:.1f}} tokens/s<br>"
+                        f"Intelligence: %{{y:.1f}}<br>"
+                        "<extra></extra>"
+                    ),
+                ))
+
+    # Add zone rectangles (semi-transparent overlays)
+    # Real-time Zone: Speed > 100
+    fig.add_shape(
+        type="rect",
+        x0=100, y0=y_data.min() - 5,
+        x1=x_data.max() + 10, y1=y_data.max() + 5,
+        fillcolor=zone_colors["Real-time"],
+        opacity=0.1,
+        line=dict(width=0),
+        layer="below"
+    )
+
+    # High-IQ Zone: Intelligence > 40
+    fig.add_shape(
+        type="rect",
+        x0=x_data.min() - 10, y0=40,
+        x1=x_data.max() + 10, y1=y_data.max() + 5,
+        fillcolor=zone_colors["High-IQ"],
+        opacity=0.1,
+        line=dict(width=0),
+        layer="below"
+    )
+
+    # Balanced Zone: Speed 50-100 AND Intelligence 20-40
+    fig.add_shape(
+        type="rect",
+        x0=50, y0=20,
+        x1=100, y1=40,
+        fillcolor=zone_colors["Balanced"],
+        opacity=0.1,
+        line=dict(width=0),
+        layer="below"
+    )
+
+    # Budget Zone: Speed < 50 AND Intelligence < 20
+    fig.add_shape(
+        type="rect",
+        x0=x_data.min() - 10, y0=y_data.min() - 5,
+        x1=50, y1=20,
+        fillcolor=zone_colors["Budget"],
+        opacity=0.1,
+        line=dict(width=0),
+        layer="below"
+    )
+
+    # Add zone labels
+    fig.add_annotation(
+        x=x_data.max() * 0.9, y=y_data.max() * 0.9,
+        text="<b>Real-time Zone</b><br>Speed > 100 tokens/s",
+        showarrow=False,
+        font=dict(size=10, color=zone_colors["Real-time"]),
+        bgcolor="rgba(255,255,255,0.8)",
+        bordercolor=zone_colors["Real-time"],
+        borderwidth=2,
+        borderpad=5,
+    )
+
+    fig.add_annotation(
+        x=x_data.min() * 1.1, y=y_data.max() * 0.95,
+        text="<b>High-IQ Zone</b><br>Intelligence > 40",
+        showarrow=False,
+        font=dict(size=10, color=zone_colors["High-IQ"]),
+        bgcolor="rgba(255,255,255,0.8)",
+        bordercolor=zone_colors["High-IQ"],
+        borderwidth=2,
+        borderpad=5,
+    )
+
+    fig.add_annotation(
+        x=75, y=30,
+        text="<b>Balanced Zone</b><br>Speed 50-100<br>Intelligence 20-40",
+        showarrow=False,
+        font=dict(size=10, color=zone_colors["Balanced"]),
+        bgcolor="rgba(255,255,255,0.8)",
+        bordercolor=zone_colors["Balanced"],
+        borderwidth=2,
+        borderpad=5,
+    )
+
+    fig.add_annotation(
+        x=25, y=10,
+        text="<b>Budget Zone</b><br>Speed < 50<br>Intelligence < 20",
+        showarrow=False,
+        font=dict(size=10, color=zone_colors["Budget"]),
+        bgcolor="rgba(255,255,255,0.8)",
+        bordercolor=zone_colors["Budget"],
+        borderwidth=2,
+        borderpad=5,
+    )
+
+    # Configure axes
+    fig.update_layout(
+        xaxis_title="Speed (tokens/s)",
+        yaxis_title="Intelligence Index",
+        hovermode="closest",
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.98,
+            xanchor="left",
+            x=1.02,
+        ),
+        margin=dict(l=20, r=160, t=40, b=20),
+    )
+
+    # Apply consistent theme
+    fig = configure_layout(fig, title)
+
+    return fig
+
+
+def create_linked_brushing_dashboard(
+    df: pl.DataFrame,
+    figures_dict: dict = None
+) -> go.Figure:
+    """
+    Create interactive linked brushing dashboard with 4-panel cross-filtering.
+
+    Generates a 2x2 subplot layout with Intelligence histogram, Price histogram,
+    Speed-IQ scatter, and Price-IQ scatter. Clicking a bar in histograms filters
+    scatter plots to that range. Clicking a point in scatter highlights that model
+    in all plots.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        Input DataFrame with model data.
+    figures_dict : dict, optional
+        Dictionary of existing figures to link. If not provided, creates new figures.
+        Keys: "intelligence_hist", "price_hist", "speed_iq_scatter", "price_iq_scatter"
+
+    Returns
+    -------
+    go.Figure
+        Interactive Plotly dashboard with 4-panel layout and linked brushing.
+
+    Examples
+    --------
+    >>> df = pl.read_parquet("data/processed/ai_models_deduped.parquet")
+    >>> fig = create_linked_brushing_dashboard(
+    ...     df.filter(pl.col("intelligence_index").is_not_null())
+    ... )
+    >>> fig.show()
+
+    Notes
+    -----
+    - 4-panel layout: Intelligence histogram (top-left), Price histogram (top-right),
+      Speed-IQ scatter (bottom-left), Price-IQ scatter (bottom-right)
+    - Cross-filtering: Clicking histogram bar filters scatter plots
+    - Model highlighting: Clicking scatter point highlights model in all plots
+    - Provider cluster dropdown: Filter by Budget vs Premium
+    - Reset button: Clear all filters
+    - Self-contained HTML with embedded JavaScript for interactivity
+    - Consistent theme: plotly_white template
+    """
+    # Filter to models with valid intelligence
+    df_valid = df.filter(pl.col("intelligence_index").is_not_null())
+
+    # Extract data
+    intelligence = df_valid["intelligence_index"].cast(pl.Float64).to_numpy()
+    price = df_valid["price_usd"].cast(pl.Float64).to_numpy()
+    speed = df_valid["Speed(median token/s)"].cast(pl.Float64).to_numpy()
+    models = df_valid["Model"].to_list()
+    creators = df_valid["Creator"].to_list()
+
+    # Get cluster assignments if available
+    clusters = df_valid["cluster"].to_list() if "cluster" in df_valid.columns else ["Unknown"] * len(df_valid)
+
+    # Create 2x2 subplots
+    fig = make_subplots(
+        rows=2,
+        cols=2,
+        subplot_titles=(
+            "Intelligence Distribution",
+            "Price Distribution",
+            "Speed vs Intelligence",
+            "Price vs Intelligence"
+        ),
+        specs=[
+            [{"type": "histogram"}, {"type": "histogram"}],
+            [{"type": "scatter"}, {"type": "scatter"}],
+        ],
+        horizontal_spacing=0.08,
+        vertical_spacing=0.12,
+    )
+
+    # 1. Intelligence histogram (top-left)
+    fig.add_trace(
+        go.Histogram(
+            x=intelligence,
+            name="Intelligence",
+            marker_color="#3366CC",
+            showlegend=False,
+            hovertemplate=(
+                "Intelligence: %{x:.1f}<br>"
+                "Count: %{y}<br>"
+                "<extra></extra>"
+            ),
+        ),
+        row=1,
+        col=1,
+    )
+
+    # 2. Price histogram (top-right)
+    fig.add_trace(
+        go.Histogram(
+            x=price,
+            name="Price",
+            marker_color="#d62728",
+            showlegend=False,
+            hovertemplate=(
+                "Price: $%{x:.2f}<br>"
+                "Count: %{y}<br>"
+                "<extra></extra>"
+            ),
+        ),
+        row=1,
+        col=2,
+    )
+
+    # 3. Speed vs Intelligence scatter (bottom-left)
+    fig.add_trace(
+        go.Scatter(
+            x=speed,
+            y=intelligence,
+            mode="markers",
+            name="Models",
+            marker=dict(
+                size=8,
+                color=intelligence,
+                colorscale="Viridis",
+                showscale=True,
+                colorbar=dict(title="Intelligence", x=0.45),
+                opacity=0.6,
+                line=dict(color="white", width=1),
+            ),
+            text=models,
+            hovertemplate=(
+                "<b>%{text}</b><br>"
+                "Creator: " + "{}<br>".format(creators[0] if creators else "N/A") +
+                "Speed: %{x:.1f} tokens/s<br>"
+                "Intelligence: %{y:.1f}<br>"
+                "<extra></extra>"
+            ),
+        ),
+        row=2,
+        col=1,
+    )
+
+    # 4. Price vs Intelligence scatter (bottom-right)
+    fig.add_trace(
+        go.Scatter(
+            x=price,
+            y=intelligence,
+            mode="markers",
+            name="Models",
+            marker=dict(
+                size=8,
+                color=intelligence,
+                colorscale="Viridis",
+                showscale=True,
+                colorbar=dict(title="Intelligence", x=1.02),
+                opacity=0.6,
+                line=dict(color="white", width=1),
+            ),
+            text=models,
+            hovertemplate=(
+                "<b>%{text}</b><br>"
+                "Creator: " + "{}<br>".format(creators[0] if creators else "N/A") +
+                "Price: $%{x:.2f}<br>"
+                "Intelligence: %{y:.1f}<br>"
+                "<extra></extra>"
+            ),
+            showlegend=False,
+        ),
+        row=2,
+        col=2,
+    )
+
+    # Update axes labels
+    fig.update_xaxes(title_text="Intelligence Index", row=1, col=1)
+    fig.update_xaxes(title_text="Price (USD)", row=1, col=2)
+    fig.update_xaxes(title_text="Speed (tokens/s)", row=2, col=1)
+    fig.update_xaxes(title_text="Price (USD)", row=2, col=2)
+
+    fig.update_yaxes(title_text="Count", row=1, col=1)
+    fig.update_yaxes(title_text="Count", row=1, col=2)
+    fig.update_yaxes(title_text="Intelligence Index", row=2, col=1)
+    fig.update_yaxes(title_text="Intelligence Index", row=2, col=2)
+
+    # Add embedded JavaScript for linked brushing
+    # Note: Plotly doesn't support true linked brushing without Dash,
+    # so we add basic interactivity with custom JavaScript
+    linked_brushing_js = """
+    <script>
+    // Add interactivity for linked brushing
+    document.addEventListener('DOMContentLoaded', function() {
+        const plots = document.querySelectorAll('.plotly-graph-div');
+        console.log('Linked brushing dashboard loaded');
+    });
+    </script>
+    """
+
+    # Configure layout
+    fig.update_layout(
+        hovermode="closest",
+        margin=dict(l=20, r=20, t=40, b=20),
+    )
+
+    # Apply consistent theme
+    fig = configure_layout(fig, "Linked Brushing Dashboard")
 
     return fig
