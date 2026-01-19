@@ -670,7 +670,7 @@ def create_provider_comparison(
                         f"{subplot_config['x_title']}: %{{x:.2f}}<br>"
                         f"{subplot_config['y_title']}: %{{y:.2f}}<br>"
                         "Cluster: " + cluster_name + "<br>"
-                        "Region: " + "{region}<br>".format(region=regions[list(clusters).tolist().index(cluster_id)] if cluster_mask.any() else "N/A") +
+                        "Region: " + "{region}<br>".format(region=regions[np.where(clusters == cluster_id)[0][0]] if cluster_mask.any() else "N/A") +
                         "Models: %{marker.size:.0f}<br>"
                         "<extra></extra>"
                     ),
@@ -830,8 +830,16 @@ def create_context_window_analysis(
 
         # Add strip plot (jittered points) for individual models
         jitter = np.random.uniform(-0.1, 0.1, size=len(context_values))
+
+        # Convert tier to numeric position for x-axis
+        # Q1->1, Q2->2, Q3->3, Q4->4, Unknown->0
+        if str(tier).startswith("Q"):
+            x_positions = [int(str(tier)[1]) + j for j in jitter]
+        else:
+            x_positions = [0 + j for j in jitter]
+
         fig.add_trace(go.Scatter(
-            x=[int(str(tier)[1]) + j for j in jitter],  # Convert Q1->1, Q2->2, etc.
+            x=x_positions,
             y=context_values,
             mode="markers",
             name=f"{tier} Models",
