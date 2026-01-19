@@ -100,12 +100,12 @@ Plans:
   6. Uncertainty is discussed for all predictions and statistical estimates
   7. Comprehensive README enables project reproducibility
   8. Final notebook imports from scripts (no duplicate logic) and loads pre-generated figures
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 04-01: Write executive summary and data quality sections
-- [ ] 04-02: Weave analysis sections into narrative story
-- [ ] 04-03: Add conclusions, recommendations, and documentation
+- [ ] 04-01-PLAN.md — Create executive summary and data quality foundation sections
+- [ ] 04-02-PLAN.md — Weave statistical analysis sections into narrative story
+- [ ] 04-03-PLAN.md — Complete narrative with tradeoffs, predictions, conclusions, and README
 
 ## Progress
 
