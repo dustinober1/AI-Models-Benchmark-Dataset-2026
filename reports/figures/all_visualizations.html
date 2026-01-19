@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Models Benchmark - Interactive Visualizations</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }}
+        header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }}
+        header h1 {{
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }}
+        header p {{
+            font-size: 1.2em;
+            opacity: 0.9;
+        }}
+        .stats {{
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }}
+        .stat {{
+            text-align: center;
+        }}
+        .stat-value {{
+            font-size: 2em;
+            font-weight: bold;
+        }}
+        .stat-label {{
+            font-size: 0.9em;
+            opacity: 0.8;
+        }}
+        .content {{
+            padding: 40px;
+        }}
+        .section {{
+            margin-bottom: 50px;
+        }}
+        .section h2 {{
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }}
+        .grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }}
+        .card {{
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }}
+        .card:hover {{
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }}
+        .card h3 {{
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }}
+        .card p {{
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }}
+        .badge {{
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+        }}
+        footer {{
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+        }}
+        @media (max-width: 768px) {{
+            .grid {{
+                grid-template-columns: 1fr;
+            }}
+            header h1 {{
+                font-size: 1.8em;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Models Benchmark Dataset</h1>
+            <p>Interactive Visualization Dashboard (2026)</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">187</div>
+                    <div class="stat-label">Models</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">15</div>
+                    <div class="stat-label">Visualizations</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">37</div>
+                    <div class="stat-label">Providers</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+
+            <div class="section">
+                <h2>Distribution Analysis (6 charts)</h2>
+                <div class="grid">
+
+                    <a href="interactive_intelligence_histogram.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Intelligence Index Distribution</h3>
+                        <p>Distribution of intelligence scores across all models (n=181)</p>
+                    </a>
+
+                    <a href="interactive_price_histogram.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Price Distribution</h3>
+                        <p>Distribution of pricing across all models (n=187)</p>
+                    </a>
+
+                    <a href="interactive_speed_histogram.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Speed Distribution</h3>
+                        <p>Distribution of inference speed in tokens/s (n=187)</p>
+                    </a>
+
+                    <a href="interactive_latency_histogram.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Latency Distribution</h3>
+                        <p>Distribution of first answer latency (n=187)</p>
+                    </a>
+
+                    <a href="interactive_context_window_histogram.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Context Window Distribution</h3>
+                        <p>Distribution of context window sizes (n=187)</p>
+                    </a>
+
+                    <a href="interactive_intelligence_box_plot.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Intelligence by Provider</h3>
+                        <p>Intelligence scores segmented by provider (n=181)</p>
+                    </a>
+
+                    <a href="interactive_price_box_plot.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Price by Provider</h3>
+                        <p>Pricing segmented by provider (n=187)</p>
+                    </a>
+
+                    <a href="interactive_speed_box_plot.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Speed by Provider</h3>
+                        <p>Inference speed segmented by provider (n=187)</p>
+                    </a>
+
+                    <a href="interactive_latency_box_plot.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Latency by Provider</h3>
+                        <p>First answer latency segmented by provider (n=187)</p>
+                    </a>
+
+                    <a href="interactive_context_window_box_plot.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Context Window by Provider</h3>
+                        <p>Context window sizes segmented by provider (n=187)</p>
+                    </a>
+
+                    <a href="interactive_correlation_heatmap.html" target="_blank" class="card">
+                        <span class="badge">VIZ-01, VIZ-02</span>
+                        <h3>Correlation Heatmap</h3>
+                        <p>5x5 Spearman correlation matrix with FDR correction</p>
+                    </a>
+
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Correlation Analysis (1 chart)</h2>
+                <div class="grid">
+
+                    <a href="interactive_correlation_heatmap.html" target="_blank" class="card">
+                        <span class="badge">VIZ-04</span>
+                        <h3>Correlation Heatmap</h3>
+                        <p>5x5 Spearman correlation matrix with FDR correction</p>
+                    </a>
+
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Provider & Frontier Analysis (4 charts)</h2>
+                <div class="grid">
+
+                    <a href="interactive_pareto_intelligence_price.html" target="_blank" class="card">
+                        <span class="badge">VIZ-05, VIZ-06, VIZ-08</span>
+                        <h3>Intelligence vs Price - Pareto Frontier</h3>
+                        <p>Pareto-efficient models in price-performance tradeoff</p>
+                    </a>
+
+                    <a href="interactive_pareto_speed_intelligence.html" target="_blank" class="card">
+                        <span class="badge">VIZ-05, VIZ-06, VIZ-08</span>
+                        <h3>Speed vs Intelligence - Pareto Frontier</h3>
+                        <p>Pareto-efficient models in speed-intelligence tradeoff</p>
+                    </a>
+
+                    <a href="interactive_provider_dashboard.html" target="_blank" class="card">
+                        <span class="badge">VIZ-05, VIZ-06, VIZ-08</span>
+                        <h3>Provider Market Segments</h3>
+                        <p>3-panel comparison: Intelligence-Price, Intelligence-Speed, Price-Speed</p>
+                    </a>
+
+                    <a href="interactive_context_window_analysis.html" target="_blank" class="card">
+                        <span class="badge">VIZ-05, VIZ-06, VIZ-08</span>
+                        <h3>Context Window by Intelligence Tier</h3>
+                        <p>Context window distribution across Q1-Q4 intelligence tiers</p>
+                    </a>
+
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Advanced Analysis (2 charts)</h2>
+                <div class="grid">
+
+                    <a href="interactive_tradeoff_analysis.html" target="_blank" class="card">
+                        <span class="badge">VIZ-07, VIZ-10</span>
+                        <h3>Speed-Intelligence Tradeoff Analysis</h3>
+                        <p>Use case zones: Real-time, High-IQ, Balanced, Budget</p>
+                    </a>
+
+                    <a href="interactive_linked_dashboard.html" target="_blank" class="card">
+                        <span class="badge">VIZ-07, VIZ-10</span>
+                        <h3>Linked Brushing Dashboard</h3>
+                        <p>4-panel cross-filtering: Intelligence, Price histograms and scatter plots</p>
+                    </a>
+
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Combined Dashboards (2 charts)</h2>
+                <div class="grid">
+                    <a href="interactive_distributions.html" target="_blank" class="card">
+                        <span class="badge">Combined</span>
+                        <h3>All Distribution Histograms</h3>
+                        <p>5-panel dashboard showing all distributions in one view</p>
+                    </a>
+                    <a href="interactive_box_plots.html" target="_blank" class="card">
+                        <span class="badge">Combined</span>
+                        <h3>All Box Plots by Provider</h3>
+                        <p>5-panel dashboard showing all provider-segmented outliers</p>
+                    </a>
+                    <a href="interactive_provider_frontier.html" target="_blank" class="card">
+                        <span class="badge">Combined</span>
+                        <h3>Provider and Frontier Analysis</h3>
+                        <p>4-panel dashboard with Pareto frontiers and provider market segments</p>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+        <footer>
+            <p><strong>AI Models Benchmark Dataset 2026</strong></p>
+            <p>Generated from Phase 3: Interactive Visualizations</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">
+                All visualizations are standalone HTML files with interactive features (hover, zoom, pan)
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
